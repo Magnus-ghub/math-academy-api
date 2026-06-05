@@ -1,12 +1,23 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ScheduleModule } from '@nestjs/schedule';
+import { join } from 'path';
+import { AppResolver } from './app.resolver';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      playground: true,
     }),
 
     TypeOrmModule.forRootAsync({
@@ -19,7 +30,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
         entities:     [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize:  true,  // dev uchun, prod da false
+        synchronize:  true,
         logging:      false,
       }),
       inject: [ConfigService],
@@ -27,5 +38,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 
     ScheduleModule.forRoot(),
   ],
+  providers: [AppResolver],
 })
 export class AppModule {}
