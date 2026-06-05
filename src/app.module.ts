@@ -24,6 +24,7 @@ import { GroupsModule } from './components/groups/groups.module';
 import { TestsModule } from './components/tests/tests.module';
 import { ResultsModule } from './components/results/results.module';
 import { PaymentsModule } from './components/payments/payments.module';
+import { ContentModule } from './components/content/content.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { PaymentsModule } from './components/payments/payments.module';
     TestsModule,
     ResultsModule,
     PaymentsModule,
+    ContentModule,
   ],
   providers: [AppResolver],
 })

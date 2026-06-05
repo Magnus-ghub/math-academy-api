@@ -20,6 +20,52 @@ type AuthResponse {
   user: User!
 }
 
+type Content {
+  contentDesc: String
+  contentImage: String
+  contentStatus: ContentStatus!
+  contentTitle: String!
+  contentType: ContentType!
+  contentVideo: String
+  createdAt: DateTime!
+  createdBy: String!
+  id: ID!
+  publishedAt: DateTime
+  updatedAt: DateTime!
+  viewCount: Int!
+}
+
+input ContentInput {
+  contentDesc: String
+  contentImage: String
+  contentTitle: String!
+  contentType: ContentType!
+  contentVideo: String
+}
+
+enum ContentStatus {
+  ARCHIVED
+  DRAFT
+  PUBLISHED
+}
+
+enum ContentType {
+  BANNER
+  EVENT
+  FAQ
+  NEWS
+  SUCCESS_STORY
+  TEACHER
+}
+
+input ContentUpdate {
+  contentDesc: String
+  contentImage: String
+  contentStatus: ContentStatus
+  contentTitle: String
+  contentVideo: String
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -73,13 +119,16 @@ type Mutation {
   blockUser(userId: String!): User!
   changeRole(userId: String!, userRole: UserRole!): User!
   confirmManualPayment(paymentId: String!): Payment!
+  createContent(input: ContentInput!): Content!
   createGroup(input: GroupInput!): Group!
   createPayment(input: PaymentInput!): Payment!
   createTest(input: TestInput!): Test!
+  deleteContent(contentId: String!): Boolean!
   deleteQuestion(questionId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   submitTest(input: ResultInput!): Result!
   telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
+  updateContent(contentId: String!, input: ContentUpdate!): Content!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
   updateTest(input: TestUpdate!, testId: String!): Test!
   updateUser(input: UserUpdate!): User!
@@ -123,10 +172,13 @@ enum PaymentType {
 }
 
 type Query {
+  getAllContent: [Content!]!
   getAllGroups: [Group!]!
   getAllPayments: [Payment!]!
   getAllTests: [Test!]!
   getAllUsers: [User!]!
+  getContent(contentId: String!): Content!
+  getEvents: [Content!]!
   getGroupById(groupId: String!): Group!
   getGroupTests(groupId: String!): [Test!]!
   getLeaderboard(testId: String!): [Result!]!
@@ -137,6 +189,8 @@ type Query {
   getPublicTests: [Test!]!
   getQuestions(testId: String!): [Question!]!
   getResult(resultId: String!): Result!
+  getSuccessStories: [Content!]!
+  getTeachers: [Content!]!
   getTest(testId: String!): Test!
   hello: String!
 }
