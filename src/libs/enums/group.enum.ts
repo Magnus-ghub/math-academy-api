@@ -4,3 +4,9 @@ export enum GroupType {
   MILLIY_SERTIFIKAT = 'MILLIY_SERTIFIKAT',
   ATTESTATSIYA      = 'ATTESTATSIYA',
 }
+
+export enum GroupStatus {
+  ACTIVE   = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  ARCHIVED = 'ARCHIVED',
+}
