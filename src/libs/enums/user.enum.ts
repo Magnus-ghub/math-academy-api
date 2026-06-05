@@ -6,8 +6,13 @@ export enum UserRole {
 }
 
 export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  PENDING_VERIFICATION = 'PENDING_VERIFICATION',
-  BLOCK = 'BLOCK',
-  DELETED = 'DELETED',
+  ACTIVE   = 'ACTIVE',
+  BLOCKED  = 'BLOCKED',
+  DELETED  = 'DELETED',
+}
+
+export enum UserAuthType {
+  TELEGRAM = 'TELEGRAM',
+  GOOGLE   = 'GOOGLE',
+  PHONE = 'PHONE',
 }
