@@ -8,3 +8,8 @@ export enum PaymentStatus {
   CONFIRMED = 'CONFIRMED',
   FAILED    = 'FAILED',
 }
+
+export enum PaymentType {
+  PREMIUM = 'PREMIUM',  // ACADEM_STUDENT uchun
+  GROUP   = 'GROUP',    // guruh uchun
+}
