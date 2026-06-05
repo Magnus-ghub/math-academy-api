@@ -21,6 +21,7 @@ import { ReportEntity } from './schema/Report.model';
 import { AuthModule } from './components/auth/auth.module';
 import { UsersModule } from './components/users/users.module';
 import { GroupsModule } from './components/groups/groups.module';
+import { TestsModule } from './components/tests/tests.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { GroupsModule } from './components/groups/groups.module';
     AuthModule,
     UsersModule,
     GroupsModule,
+    TestsModule,
   ],
   providers: [AppResolver],
 })

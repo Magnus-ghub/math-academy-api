@@ -56,21 +56,126 @@ input GroupUpdate {
 }
 
 type Mutation {
+  addQuestion(input: QuestionInput!): Question!
   blockUser(userId: String!): User!
   changeRole(userId: String!, userRole: UserRole!): User!
   createGroup(input: GroupInput!): Group!
+  createTest(input: TestInput!): Test!
+  deleteQuestion(questionId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
+  updateTest(input: TestUpdate!, testId: String!): Test!
   updateUser(input: UserUpdate!): User!
 }
 
 type Query {
   getAllGroups: [Group!]!
+  getAllTests: [Test!]!
   getAllUsers: [User!]!
   getGroupById(groupId: String!): Group!
+  getGroupTests(groupId: String!): [Test!]!
   getMe: User!
+  getPublicTests: [Test!]!
+  getQuestions(testId: String!): [Question!]!
+  getTest(testId: String!): Test!
   hello: String!
+}
+
+type Question {
+  correctAnswer: Int!
+  createdAt: DateTime!
+  explanation: String
+  id: ID!
+  options: [String!]!
+  orderIndex: Int!
+  questionImage: String
+  questionText: String!
+  questionType: QuestionType!
+  testId: String!
+}
+
+input QuestionInput {
+  correctAnswer: Int!
+  explanation: String
+  options: [String!]!
+  orderIndex: Int!
+  questionImage: String
+  questionText: String!
+  questionType: QuestionType
+  testId: String!
+}
+
+enum QuestionType {
+  MULTI
+  SINGLE
+}
+
+type Test {
+  createdAt: DateTime!
+  createdBy: String!
+  duration: Int!
+  groupId: String
+  id: ID!
+  testAccess: TestAccess!
+  testBlock: TestBlock
+  testDesc: String
+  testImage: String
+  testStatus: TestStatus!
+  testTitle: String!
+  testType: TestType!
+  totalAttempts: Int!
+  totalQuestions: Int!
+  updatedAt: DateTime!
+}
+
+enum TestAccess {
+  GROUP
+  PREMIUM
+  PUBLIC
+}
+
+enum TestBlock {
+  ELECTIVE
+  MANDATORY
+}
+
+input TestInput {
+  duration: Int!
+  groupId: String
+  testAccess: TestAccess!
+  testBlock: TestBlock
+  testDesc: String
+  testImage: String
+  testTitle: String!
+  testType: TestType!
+}
+
+enum TestStatus {
+  ARCHIVED
+  DRAFT
+  PUBLISHED
+}
+
+enum TestType {
+  ATTESTATSIYA
+  ATTESTATSIYA_GROUP
+  DTM
+  DTM_GROUP
+  MILLIY_GROUP
+  MILLIY_SERTIFIKAT
+  SAT
+  SAT_GROUP
+}
+
+input TestUpdate {
+  duration: Int
+  testAccess: TestAccess
+  testBlock: TestBlock
+  testDesc: String
+  testImage: String
+  testStatus: TestStatus
+  testTitle: String
 }
 
 type User {
