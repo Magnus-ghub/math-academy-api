@@ -5,3 +5,4 @@ export * from './payment.enum';
 export * from './content.enum';
 export * from './common.enum';
 export * from './report.enum';
+export * from './comment.enum';

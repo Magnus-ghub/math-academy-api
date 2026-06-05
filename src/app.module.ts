@@ -5,7 +5,19 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
+
 import { AppResolver } from './app.resolver';
+
+import { UserEntity } from './schema/User.model';
+import { GroupEntity } from './schema/Group.model';
+import { UserGroupEntity } from './schema/User_Group.model';
+import { TestEntity } from './schema/Test.model';
+import { QuestionEntity } from './schema/Question.model';
+import { ResultEntity } from './schema/Result.model';
+import { PaymentEntity } from './schema/Payment.model';
+import { ContentEntity } from './schema/Content.model';
+import { CommentEntity } from './schema/Comment.model';
+import { ReportEntity } from './schema/Report.model';
 
 @Module({
   imports: [
@@ -29,9 +41,20 @@ import { AppResolver } from './app.resolver';
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
-        entities:     [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize:  true,
-        logging:      false,
+        entities: [
+          UserEntity,
+          GroupEntity,
+          UserGroupEntity,
+          TestEntity,
+          QuestionEntity,
+          ResultEntity,
+          PaymentEntity,
+          ContentEntity,
+          CommentEntity,
+          ReportEntity,
+        ],
+        synchronize: true,
+        logging:     false,
       }),
       inject: [ConfigService],
     }),
