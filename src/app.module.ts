@@ -23,6 +23,7 @@ import { UsersModule } from './components/users/users.module';
 import { GroupsModule } from './components/groups/groups.module';
 import { TestsModule } from './components/tests/tests.module';
 import { ResultsModule } from './components/results/results.module';
+import { PaymentsModule } from './components/payments/payments.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { ResultsModule } from './components/results/results.module';
     GroupsModule,
     TestsModule,
     ResultsModule,
+    PaymentsModule,
   ],
   providers: [AppResolver],
 })
