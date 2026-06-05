@@ -12,16 +12,63 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type Group {
+  createdAt: DateTime!
+  durationMonths: Int!
+  endedAt: DateTime
+  groupDesc: String
+  groupName: String!
+  groupStatus: GroupStatus!
+  groupType: GroupType!
+  id: ID!
+  memberCount: Int!
+  telegramChatId: String!
+  updatedAt: DateTime!
+}
+
+input GroupInput {
+  durationMonths: Int!
+  groupDesc: String
+  groupName: String!
+  groupType: GroupType!
+  telegramChatId: String!
+}
+
+enum GroupStatus {
+  ACTIVE
+  ARCHIVED
+  INACTIVE
+}
+
+enum GroupType {
+  ATTESTATSIYA
+  DTM
+  MILLIY_SERTIFIKAT
+  SAT
+}
+
+input GroupUpdate {
+  durationMonths: Int
+  endedAt: DateTime
+  groupDesc: String
+  groupName: String
+  groupStatus: GroupStatus
+}
+
 type Mutation {
   blockUser(userId: String!): User!
   changeRole(userId: String!, userRole: UserRole!): User!
+  createGroup(input: GroupInput!): Group!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
+  updateGroup(groupId: String!, input: GroupUpdate!): Group!
   updateUser(input: UserUpdate!): User!
 }
 
 type Query {
+  getAllGroups: [Group!]!
   getAllUsers: [User!]!
+  getGroupById(groupId: String!): Group!
   getMe: User!
   hello: String!
 }

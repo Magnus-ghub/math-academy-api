@@ -20,6 +20,7 @@ import { CommentEntity } from './schema/Comment.model';
 import { ReportEntity } from './schema/Report.model';
 import { AuthModule } from './components/auth/auth.module';
 import { UsersModule } from './components/users/users.module';
+import { GroupsModule } from './components/groups/groups.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { UsersModule } from './components/users/users.module';
     ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
+    GroupsModule,
   ],
   providers: [AppResolver],
 })
