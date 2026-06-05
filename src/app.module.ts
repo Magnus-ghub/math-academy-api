@@ -27,6 +27,7 @@ import { PaymentsModule } from './components/payments/payments.module';
 import { ContentModule } from './components/content/content.module';
 import { CommentModule } from './components/comment/comment.module';
 import { ReportModule } from './components/report/report.module';
+import { UploadModule } from './components/upload/upload.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { ReportModule } from './components/report/report.module';
     ContentModule,
     CommentModule,
     ReportModule,
+    UploadModule,
   ],
   providers: [AppResolver],
 })
