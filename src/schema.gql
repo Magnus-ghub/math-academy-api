@@ -13,11 +13,16 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 scalar DateTime
 
 type Mutation {
+  blockUser(userId: String!): User!
+  changeRole(userId: String!, userRole: UserRole!): User!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
+  updateUser(input: UserUpdate!): User!
 }
 
 type Query {
+  getAllUsers: [User!]!
+  getMe: User!
   hello: String!
 }
 
@@ -56,4 +61,13 @@ enum UserStatus {
   ACTIVE
   BLOCKED
   DELETED
+}
+
+input UserUpdate {
+  userAddress: String
+  userDesc: String
+  userImage: String
+  userLastName: String
+  userName: String
+  userPhone: String
 }

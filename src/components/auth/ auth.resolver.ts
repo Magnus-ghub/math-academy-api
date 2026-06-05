@@ -2,7 +2,6 @@ import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import { User } from 'src/libs/dto/users/user';
 import { ObjectType, Field } from '@nestjs/graphql';
-import { UserAuthType } from '../libs/enums/user.enum';
 
 @ObjectType()
 export class AuthResponse {

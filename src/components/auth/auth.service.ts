@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UserEntity } from '../schema/User.model';
-import { UserRole, UserStatus, UserAuthType } from '../libs/enums/user.enum';
-import { GroupEntity } from '../schema/Group.model';
-import { UserGroupEntity } from '../schema/User_Group.model';
+import { UserEntity } from 'src/schema/User.model';
+import { GroupEntity } from 'src/schema/Group.model';
+import { UserGroupEntity } from 'src/schema/User_Group.model';
+import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+
 
 @Injectable()
 export class AuthService {
