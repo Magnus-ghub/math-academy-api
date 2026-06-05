@@ -2,6 +2,58 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AuthResponse {
+  accessToken: String!
+  user: User!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Mutation {
+  googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
+  telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
+}
+
 type Query {
   hello: String!
+}
+
+type User {
+  createdAt: DateTime!
+  googleId: String
+  id: ID!
+  premiumExpiresAt: DateTime
+  telegramId: String
+  updatedAt: DateTime!
+  userAddress: String
+  userAuthType: UserAuthType!
+  userDesc: String
+  userImage: String
+  userLastName: String
+  userName: String
+  userPhone: String
+  userRole: UserRole!
+  userStatus: UserStatus!
+}
+
+enum UserAuthType {
+  GOOGLE
+  PHONE
+  TELEGRAM
+}
+
+enum UserRole {
+  ACADEM_STUDENT
+  ADMIN
+  STUDENT
+  TEACHER
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
 }

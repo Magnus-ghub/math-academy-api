@@ -1,3 +1,5 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum ContentType {
   SUCCESS_STORY = 'SUCCESS_STORY', 
   TEACHER       = 'TEACHER',       
@@ -6,9 +8,11 @@ export enum ContentType {
   FAQ           = 'FAQ',           
   BANNER        = 'BANNER',        
 }
+registerEnumType(ContentType, { name: 'ContentType' });
 
 export enum ContentStatus {
   DRAFT     = 'DRAFT',     
   PUBLISHED = 'PUBLISHED',
   ARCHIVED  = 'ARCHIVED', 
 }
+registerEnumType(ContentStatus, { name: 'ContentStatus' });

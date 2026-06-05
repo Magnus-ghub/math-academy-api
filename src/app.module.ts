@@ -18,6 +18,7 @@ import { PaymentEntity } from './schema/Payment.model';
 import { ContentEntity } from './schema/Content.model';
 import { CommentEntity } from './schema/Comment.model';
 import { ReportEntity } from './schema/Report.model';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { ReportEntity } from './schema/Report.model';
     }),
 
     ScheduleModule.forRoot(),
+    AuthModule,
   ],
   providers: [AppResolver],
 })

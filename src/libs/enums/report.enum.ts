@@ -1,7 +1,10 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum ReportType {
   QUESTION = 'QUESTION', 
   TEST     = 'TEST',     
 }
+registerEnumType(ReportType, { name: 'ReportType' });
 
 export enum ReportStatus {
   PENDING  = 'PENDING',  
@@ -9,6 +12,7 @@ export enum ReportStatus {
   RESOLVED = 'RESOLVED', 
   REJECTED = 'REJECTED', 
 }
+registerEnumType(ReportStatus, { name: 'ReportStatus' });
 
 export enum ReportReason {
   WRONG_ANSWER   = 'WRONG_ANSWER',   
@@ -17,3 +21,4 @@ export enum ReportReason {
   UNCLEAR        = 'UNCLEAR',      
   OTHER          = 'OTHER',          
 }
+registerEnumType(ReportReason, { name: 'ReportReason' });

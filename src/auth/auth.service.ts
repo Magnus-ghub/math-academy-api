@@ -1,0 +1,164 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { UserEntity } from '../schema/User.model';
+import { UserRole, UserStatus, UserAuthType } from '../libs/enums/user.enum';
+import { GroupEntity } from '../schema/Group.model';
+import { UserGroupEntity } from '../schema/User_Group.model';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @InjectRepository(UserEntity)
+    private userRepo: Repository<UserEntity>,
+
+    @InjectRepository(GroupEntity)
+    private groupRepo: Repository<GroupEntity>,
+
+    @InjectRepository(UserGroupEntity)
+    private userGroupRepo: Repository<UserGroupEntity>,
+
+    private jwtService: JwtService,
+    private config: ConfigService,
+  ) {}
+
+  // JWT token yaratish
+  private generateToken(user: UserEntity, groups: UserGroupEntity[]) {
+    const payload = {
+      userId: user.id,
+      userRole: user.userRole,
+      groups: groups.map((g) => ({
+        groupId: g.groupId,
+        groupType: g.groupType,
+        expiresAt: g.expiresAt,
+      })),
+    };
+    return this.jwtService.sign(payload);
+  }
+
+  // Telegram guruhda borligini tekshirish
+  private async checkTelegramGroups(telegramId: string): Promise<GroupEntity[]> {
+    const groups = await this.groupRepo.find({
+      where: { groupStatus: 'ACTIVE' as any },
+    });
+
+    const memberGroups: GroupEntity[] = [];
+
+    for (const group of groups) {
+      try {
+        const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
+        const res = await fetch(
+          `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${group.telegramChatId}&user_id=${telegramId}`,
+        );
+        const data = await res.json();
+        if (['member', 'administrator', 'creator'].includes(data.result?.status)) {
+          memberGroups.push(group);
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return memberGroups;
+  }
+
+  // user_groups jadvalini yangilash
+  private async syncUserGroups(user: UserEntity, memberGroups: GroupEntity[]) {
+    // Mavjud user_groups larni o'chirish
+    await this.userGroupRepo.delete({ userId: user.id });
+
+    // Yangilarini qo'shish
+    for (const group of memberGroups) {
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
+
+      const userGroup = this.userGroupRepo.create({
+        userId: user.id,
+        groupId: group.id,
+        groupType: group.groupType,
+        expiresAt,
+      });
+      await this.userGroupRepo.save(userGroup);
+    }
+
+    return this.userGroupRepo.find({ where: { userId: user.id } });
+  }
+
+  // Telegram login
+  async telegramLogin(telegramData: {
+    telegramId: string;
+    userName?: string;
+    userLastName?: string;
+    userImage?: string;
+  }) {
+    let user = await this.userRepo.findOne({
+      where: { telegramId: telegramData.telegramId },
+    });
+
+    if (!user) {
+      user = this.userRepo.create({
+        telegramId: telegramData.telegramId,
+        userName: telegramData.userName,
+        userLastName: telegramData.userLastName,
+        userImage: telegramData.userImage,
+        userAuthType: UserAuthType.TELEGRAM,
+        userRole: UserRole.STUDENT,
+        userStatus: UserStatus.ACTIVE,
+      });
+      await this.userRepo.save(user);
+    }
+
+    // Guruhlarni tekshirish
+    const memberGroups = await this.checkTelegramGroups(telegramData.telegramId);
+    const userGroups = await this.syncUserGroups(user, memberGroups);
+
+    return {
+      accessToken: this.generateToken(user, userGroups),
+      user,
+    };
+  }
+
+  // Google login
+  async googleLogin(googleData: {
+    googleId: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  }) {
+    let user = await this.userRepo.findOne({
+      where: { googleId: googleData.googleId },
+    });
+
+    if (!user) {
+      user = this.userRepo.create({
+        googleId: googleData.googleId,
+        userName: googleData.name,
+        userImage: googleData.avatar,
+        userAuthType: UserAuthType.GOOGLE,
+        userRole: UserRole.STUDENT,
+        userStatus: UserStatus.ACTIVE,
+      });
+      await this.userRepo.save(user);
+    }
+
+    const userGroups = await this.userGroupRepo.find({
+      where: { userId: user.id },
+    });
+
+    return {
+      accessToken: this.generateToken(user, userGroups),
+      user,
+    };
+  }
+
+  // Token tekshirish
+  async validateToken(token: string) {
+    try {
+      return this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+}

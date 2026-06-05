@@ -1,10 +1,14 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum CommentType {
-  TEST    = 'TEST',
+  TEST = 'TEST',
   GENERAL = 'GENERAL',
 }
+registerEnumType(CommentType, { name: 'CommentType' });
 
 export enum CommentStatus {
-  PENDING  = 'PENDING',
+  PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
 }
+registerEnumType(CommentType, { name: 'CommentType' });
