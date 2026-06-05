@@ -2,6 +2,19 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AnswerDto {
+  isCorrect: Boolean!
+  questionId: String!
+  selectedAnswer: Int!
+  timeSpent: Int!
+}
+
+input AnswerInput {
+  questionId: String!
+  selectedAnswer: Int!
+  timeSpent: Int!
+}
+
 type AuthResponse {
   accessToken: String!
   user: User!
@@ -63,6 +76,7 @@ type Mutation {
   createTest(input: TestInput!): Test!
   deleteQuestion(questionId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
+  submitTest(input: ResultInput!): Result!
   telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
   updateTest(input: TestUpdate!, testId: String!): Test!
@@ -75,9 +89,12 @@ type Query {
   getAllUsers: [User!]!
   getGroupById(groupId: String!): Group!
   getGroupTests(groupId: String!): [Test!]!
+  getLeaderboard(testId: String!): [Result!]!
   getMe: User!
+  getMyResults: [Result!]!
   getPublicTests: [Test!]!
   getQuestions(testId: String!): [Question!]!
+  getResult(resultId: String!): Result!
   getTest(testId: String!): Test!
   hello: String!
 }
@@ -109,6 +126,34 @@ input QuestionInput {
 enum QuestionType {
   MULTI
   SINGLE
+}
+
+type Result {
+  answers: [AnswerDto!]!
+  correctAnswers: Int!
+  createdAt: DateTime!
+  duration: Int!
+  finishedAt: DateTime
+  groupId: String
+  id: ID!
+  resultStatus: ResultStatus!
+  score: Float!
+  testId: String!
+  totalQuestions: Int!
+  userId: String!
+}
+
+input ResultInput {
+  answers: [AnswerInput!]!
+  duration: Int!
+  testId: String!
+}
+
+enum ResultStatus {
+  ABANDONED
+  COMPLETED
+  IN_PROGRESS
+  TIME_UP
 }
 
 type Test {

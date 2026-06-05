@@ -22,6 +22,7 @@ import { AuthModule } from './components/auth/auth.module';
 import { UsersModule } from './components/users/users.module';
 import { GroupsModule } from './components/groups/groups.module';
 import { TestsModule } from './components/tests/tests.module';
+import { ResultsModule } from './components/results/results.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { TestsModule } from './components/tests/tests.module';
     UsersModule,
     GroupsModule,
     TestsModule,
+    ResultsModule,
   ],
   providers: [AppResolver],
 })
