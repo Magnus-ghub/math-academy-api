@@ -5,6 +5,8 @@ import { UserEntity } from '../../schema/User.model';
 import { UserGroupEntity } from '../../schema/User_Group.model';
 import { UserRole, UserStatus } from '../../libs/enums/user.enum';
 import { UserUpdate } from 'src/libs/dto/users/userUpdate';
+import { Cron } from '@nestjs/schedule';
+import { LessThan } from 'typeorm';
 
 @Injectable()
 export class UsersService {
@@ -52,5 +54,25 @@ export class UsersService {
   async changeRole(userId: string, userRole: UserRole): Promise<UserEntity> {
     await this.userRepo.update(userId, { userRole });
     return this.getMe(userId);
+  }
+
+  @Cron('0 0 * * *')
+  async expirePremiumAccess() {
+    const expired = await this.userRepo.find({
+      where: {
+        userRole: UserRole.ACADEM_STUDENT,
+        premiumExpiresAt: LessThan(new Date()),
+      },
+    });
+
+    if (expired.length > 0) {
+      for (const user of expired) {
+        await this.userRepo.update(user.id, {
+          userRole: UserRole.STUDENT,
+          premiumExpiresAt: null,
+        });
+      }
+      console.log(`Expired premium access for ${expired.length} users`);
+    }
   }
 }

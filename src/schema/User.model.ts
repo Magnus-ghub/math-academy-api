@@ -40,8 +40,8 @@ export class UserEntity {
   @Column({ nullable: true })
   userDesc: string;
 
-  @Column({ nullable: true })
-  premiumExpiresAt: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  premiumExpiresAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;
