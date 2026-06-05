@@ -1,13 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserEntity } from 'src/schema/User.model';
 import { GroupEntity } from 'src/schema/Group.model';
 import { UserGroupEntity } from 'src/schema/User_Group.model';
 import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
-
 
 @Injectable()
 export class AuthService {
@@ -39,8 +39,53 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
+  // Telegram data ni verify qilish
+  private verifyTelegramHash(data: {
+    telegramId: string;
+    userName?: string;
+    userLastName?: string;
+    userImage?: string;
+    hash: string;
+    authDate: number;
+  }): boolean {
+    const { hash, ...rest } = data;
+
+    // Auth date 24 soatdan eski bo'lsa rad etish
+    const now = Math.floor(Date.now() / 1000);
+    if (now - rest.authDate > 86400) return false;
+
+    // Data string yaratish
+    const dataString = Object.entries({
+      auth_date: rest.authDate,
+      first_name: rest.userName,
+      id: rest.telegramId,
+      last_name: rest.userLastName,
+      photo_url: rest.userImage,
+    })
+      .filter(([_, v]) => v !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n');
+
+    // Secret key
+    const secretKey = crypto
+      .createHmac('sha256', 'WebAppData')
+      .update(this.config.get<string>('TELEGRAM_BOT_TOKEN')!)
+      .digest();
+
+    // Hash tekshirish
+    const expectedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(dataString)
+      .digest('hex');
+
+    return expectedHash === hash;
+  }
+
   // Telegram guruhda borligini tekshirish
-  private async checkTelegramGroups(telegramId: string): Promise<GroupEntity[]> {
+  private async checkTelegramGroups(
+    telegramId: string,
+  ): Promise<GroupEntity[]> {
     const groups = await this.groupRepo.find({
       where: { groupStatus: 'ACTIVE' as any },
     });
@@ -54,7 +99,9 @@ export class AuthService {
           `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${group.telegramChatId}&user_id=${telegramId}`,
         );
         const data = await res.json();
-        if (['member', 'administrator', 'creator'].includes(data.result?.status)) {
+        if (
+          ['member', 'administrator', 'creator'].includes(data.result?.status)
+        ) {
           memberGroups.push(group);
         }
       } catch {
@@ -93,7 +140,12 @@ export class AuthService {
     userName?: string;
     userLastName?: string;
     userImage?: string;
+    hash: string;
+    authDate: number;
   }) {
+    if (!this.verifyTelegramHash(telegramData)) {
+      throw new UnauthorizedException('Invalid Telegram data');
+    }
     let user = await this.userRepo.findOne({
       where: { telegramId: telegramData.telegramId },
     });
@@ -112,7 +164,9 @@ export class AuthService {
     }
 
     // Guruhlarni tekshirish
-    const memberGroups = await this.checkTelegramGroups(telegramData.telegramId);
+    const memberGroups = await this.checkTelegramGroups(
+      telegramData.telegramId,
+    );
     const userGroups = await this.syncUserGroups(user, memberGroups);
 
     return {

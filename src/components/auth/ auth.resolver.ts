@@ -34,6 +34,8 @@ export class AuthResolver {
   @Mutation(() => AuthResponse)
   async telegramLogin(
     @Args('telegramId') telegramId: string,
+    @Args('hash') hash: string,
+    @Args('authDate') authDate: number,
     @Args('userName', { nullable: true }) userName?: string,
     @Args('userLastName', { nullable: true }) userLastName?: string,
     @Args('userImage', { nullable: true }) userImage?: string,
@@ -43,6 +45,8 @@ export class AuthResolver {
       userName,
       userLastName,
       userImage,
+      hash,
+      authDate,
     });
   }
 
