@@ -25,6 +25,8 @@ import { TestsModule } from './components/tests/tests.module';
 import { ResultsModule } from './components/results/results.module';
 import { PaymentsModule } from './components/payments/payments.module';
 import { ContentModule } from './components/content/content.module';
+import { CommentModule } from './components/comment/comment.module';
+import { ReportModule } from './components/report/report.module';
 
 @Module({
   imports: [
@@ -74,6 +76,8 @@ import { ContentModule } from './components/content/content.module';
     ResultsModule,
     PaymentsModule,
     ContentModule,
+    CommentModule,
+    ReportModule,
   ],
   providers: [AppResolver],
 })

@@ -20,6 +20,35 @@ type AuthResponse {
   user: User!
 }
 
+type Comment {
+  commentStatus: CommentStatus!
+  commentType: CommentType!
+  createdAt: DateTime!
+  id: ID!
+  rating: Int
+  testId: String
+  text: String!
+  userId: String!
+}
+
+input CommentInput {
+  commentType: CommentType!
+  rating: Int
+  testId: String
+  text: String!
+}
+
+enum CommentStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum CommentType {
+  GENERAL
+  TEST
+}
+
 type Content {
   contentDesc: String
   contentImage: String
@@ -116,16 +145,22 @@ input GroupUpdate {
 
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
+  approveComment(commentId: String!): Comment!
   blockUser(userId: String!): User!
   changeRole(userId: String!, userRole: UserRole!): User!
   confirmManualPayment(paymentId: String!): Payment!
+  createComment(input: CommentInput!): Comment!
   createContent(input: ContentInput!): Content!
   createGroup(input: GroupInput!): Group!
   createPayment(input: PaymentInput!): Payment!
+  createReport(input: ReportInput!): Report!
   createTest(input: TestInput!): Test!
   deleteContent(contentId: String!): Boolean!
   deleteQuestion(questionId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
+  rejectComment(commentId: String!): Comment!
+  rejectReport(reportId: String!): Report!
+  resolveReport(reportId: String!): Report!
   submitTest(input: ResultInput!): Result!
   telegramLogin(telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateContent(contentId: String!, input: ContentUpdate!): Content!
@@ -185,13 +220,17 @@ type Query {
   getMe: User!
   getMyPayments: [Payment!]!
   getMyResults: [Result!]!
+  getPendingComments: [Comment!]!
   getPendingPayments: [Payment!]!
+  getPendingReports: [Report!]!
+  getPublicComments: [Comment!]!
   getPublicTests: [Test!]!
   getQuestions(testId: String!): [Question!]!
   getResult(resultId: String!): Result!
   getSuccessStories: [Content!]!
   getTeachers: [Content!]!
   getTest(testId: String!): Test!
+  getTestComments(testId: String!): [Comment!]!
   hello: String!
 }
 
@@ -222,6 +261,46 @@ input QuestionInput {
 enum QuestionType {
   MULTI
   SINGLE
+}
+
+type Report {
+  createdAt: DateTime!
+  id: ID!
+  questionId: String
+  reportReason: ReportReason!
+  reportStatus: ReportStatus!
+  reportText: String
+  reportType: ReportType!
+  testId: String
+  userId: String!
+}
+
+input ReportInput {
+  questionId: String
+  reportReason: ReportReason!
+  reportText: String
+  reportType: ReportType!
+  testId: String
+}
+
+enum ReportReason {
+  OTHER
+  TYPO
+  UNCLEAR
+  WRONG_ANSWER
+  WRONG_QUESTION
+}
+
+enum ReportStatus {
+  PENDING
+  REJECTED
+  RESOLVED
+  REVIEWED
+}
+
+enum ReportType {
+  QUESTION
+  TEST
 }
 
 type Result {

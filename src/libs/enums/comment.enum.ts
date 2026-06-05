@@ -11,4 +11,4 @@ export enum CommentStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
 }
-registerEnumType(CommentType, { name: 'CommentType' });
+registerEnumType(CommentStatus, { name: 'CommentStatus' });
