@@ -1,22 +1,33 @@
 export enum TestType {
-  DTM                = 'DTM',
-  SAAT               = 'SAAT',
-  MILLIY_SERTIFIKAT  = 'MILLIY_SERTIFIKAT',
-  ATTESTATSIYA       = 'ATTESTATSIYA',
-  DTM_GROUP          = 'DTM_GROUP',
-  SAAT_GROUP         = 'SAAT_GROUP',
-  MILLIY_GROUP       = 'MILLIY_GROUP',
+  DTM = 'DTM',
+  SAT = 'SAT',
+  MILLIY_SERTIFIKAT = 'MILLIY_SERTIFIKAT',
+  ATTESTATSIYA = 'ATTESTATSIYA',
+  DTM_GROUP = 'DTM_GROUP',
+  SAT_GROUP = 'SAT_GROUP',
+  MILLIY_GROUP = 'MILLIY_GROUP',
   ATTESTATSIYA_GROUP = 'ATTESTATSIYA_GROUP',
 }
 
 export enum TestAccess {
-  PUBLIC  = 'PUBLIC',
+  PUBLIC = 'PUBLIC',
   PREMIUM = 'PREMIUM',
-  GROUP   = 'GROUP',
+  GROUP = 'GROUP',
 }
 
 export enum TestDifficulty {
-  EASY   = 'EASY',
-  MEDIUM = 'MEDIUM',
-  HARD   = 'HARD',
+  EASY = 'EASY',
+  STANDART = 'STANDART',
+  HARD = 'HARD',
+}
+
+export enum TestStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  ARCHIVED = 'ARCHIVED',
+}
+
+export enum TestBlock {
+  MANDATORY = 'MANDATORY', // majburiy blok (matematika)
+  ELECTIVE  = 'ELECTIVE',  // tanlangan fan bloki
 }

@@ -1,12 +1,12 @@
 export enum GroupType {
-  DTM               = 'DTM',
-  SAAT              = 'SAAT',
+  DTM = 'DTM',
+  SAT = 'SAT',
   MILLIY_SERTIFIKAT = 'MILLIY_SERTIFIKAT',
-  ATTESTATSIYA      = 'ATTESTATSIYA',
+  ATTESTATSIYA = 'ATTESTATSIYA',
 }
 
 export enum GroupStatus {
-  ACTIVE   = 'ACTIVE',
+  ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
   ARCHIVED = 'ARCHIVED',
 }
