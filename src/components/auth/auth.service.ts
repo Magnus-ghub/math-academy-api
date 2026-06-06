@@ -48,6 +48,7 @@ export class AuthService {
     hash: string;
     authDate: number;
   }): boolean {
+    if (process.env.NODE_ENV === 'development') return true;
     const { hash, ...rest } = data;
 
     // Auth date 24 soatdan eski bo'lsa rad etish
