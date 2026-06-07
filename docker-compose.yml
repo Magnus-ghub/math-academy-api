@@ -4,7 +4,7 @@ services:
   math-academy-api:
     container_name: math-academy-api
     restart: always
-    image: node:20.10.0
+    image: node:20.19.0
     ports:
       - 4005:4000
     env_file:
@@ -16,7 +16,7 @@ services:
       - math-academy-network
     depends_on:
       - postgres
-    command: bash -c "rm -rf dist && npm install && npx nest build && npm run start:prod"
+    command: bash -c "rm -rf dist && npm install && npm install @nestjs/cli --save-dev && ./node_modules/.bin/nest build && npm run start:prod"
 
   postgres:
     container_name: math-academy-db
