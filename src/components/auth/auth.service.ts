@@ -68,9 +68,9 @@ export class AuthService {
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
 
-    // Secret key
+    // Secret key — Login Widget uchun sha256(bot_token)
     const secretKey = crypto
-      .createHmac('sha256', 'WebAppData')
+      .createHash('sha256')
       .update(this.config.get<string>('TELEGRAM_BOT_TOKEN')!)
       .digest();
 
