@@ -11,10 +11,11 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { UserEntity } from 'src/schema/User.model';
 import { GroupEntity } from 'src/schema/Group.model';
 import { UserGroupEntity } from 'src/schema/User_Group.model';
-
+import { AuthController } from './auth.controller';
 
 
 @Module({
+  controllers: [AuthController],
   imports: [
     PassportModule,
     TypeOrmModule.forFeature([UserEntity, GroupEntity, UserGroupEntity]),
