@@ -16,7 +16,7 @@ services:
       - math-academy-network
     depends_on:
       - postgres
-    command: bash -c "rm -rf dist && npm install && npm run build && npm run start:prod"
+    command: bash -c "rm -rf dist && npm install && npx nest build && npm run start:prod"
 
   postgres:
     container_name: math-academy-db
