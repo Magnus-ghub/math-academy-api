@@ -67,8 +67,7 @@ export class TestsResolver {
     return this.testsService.addQuestion(input);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.TEACHER, UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard)
   @Query(() => [Question])
   async getQuestions(@Args('testId') testId: string) {
     return this.testsService.getQuestionsByTest(testId);

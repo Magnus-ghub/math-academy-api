@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Int } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import { User } from 'src/libs/dto/users/user';
 import { ObjectType, Field } from '@nestjs/graphql';
@@ -35,7 +35,7 @@ export class AuthResolver {
   async telegramLogin(
     @Args('telegramId') telegramId: string,
     @Args('hash') hash: string,
-    @Args('authDate') authDate: number,
+    @Args('authDate', { type: () => Int }) authDate: number,
     @Args('userName', { nullable: true }) userName?: string,
     @Args('userLastName', { nullable: true }) userLastName?: string,
     @Args('userImage', { nullable: true }) userImage?: string,

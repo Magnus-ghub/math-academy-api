@@ -21,14 +21,23 @@ async function bootstrap() {
   );
 
   app.enableCors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:4006',
-    'http://cuben.info',
-    'http://www.cuben.info',
-  ],
-  credentials: true,
-});
+    origin: (origin, callback) => {
+      if (!origin || process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      const allowed = [
+        'https://cuben.info',
+        'https://www.cuben.info',
+        process.env.FRONTEND_URL,
+      ].filter(Boolean);
+      if (allowed.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: ${origin} not allowed`));
+      }
+    },
+    credentials: true,
+  });
 
   const port = process.env.PORT || 4000;
   await app.listen(port);

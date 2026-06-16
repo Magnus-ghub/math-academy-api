@@ -39,7 +39,7 @@ import { UploadModule } from './components/upload/upload.module';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      playground: true,
+      playground: process.env.NODE_ENV !== 'production',
     }),
 
     TypeOrmModule.forRootAsync({
@@ -63,7 +63,7 @@ import { UploadModule } from './components/upload/upload.module';
           CommentEntity,
           ReportEntity,
         ],
-        synchronize: true,
+        synchronize: config.get('NODE_ENV') !== 'production',
         logging:     false,
       }),
       inject: [ConfigService],

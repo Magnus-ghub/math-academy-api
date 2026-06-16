@@ -162,7 +162,7 @@ type Mutation {
   rejectReport(reportId: String!): Report!
   resolveReport(reportId: String!): Report!
   submitTest(input: ResultInput!): Result!
-  telegramLogin(authDate: Float!, hash: String!, telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
+  telegramLogin(authDate: Int!, hash: String!, telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateContent(contentId: String!, input: ContentUpdate!): Content!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
   updateTest(input: TestUpdate!, testId: String!): Test!
