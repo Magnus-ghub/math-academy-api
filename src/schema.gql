@@ -2,6 +2,17 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AdminUserUpdate {
+  userAddress: String
+  userDesc: String
+  userImage: String
+  userLastName: String
+  userName: String
+  userPhone: String
+  userRole: UserRole
+  userStatus: UserStatus
+}
+
 type AnswerDto {
   isCorrect: Boolean!
   questionId: String!
@@ -145,8 +156,9 @@ input GroupUpdate {
 
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
+  addUserToGroup(groupId: String!, userId: String!): UserGroup!
+  adminUpdateUser(input: AdminUserUpdate!, userId: String!): User!
   approveComment(commentId: String!): Comment!
-  blockUser(userId: String!): User!
   changeRole(userId: String!, userRole: UserRole!): User!
   confirmManualPayment(paymentId: String!): Payment!
   createComment(input: CommentInput!): Comment!
@@ -215,6 +227,7 @@ type Query {
   getContent(contentId: String!): Content!
   getEvents: [Content!]!
   getGroupById(groupId: String!): Group!
+  getGroupMemberIds(groupId: String!): [String!]!
   getGroupTests(groupId: String!): [Test!]!
   getLeaderboard(testId: String!): [Result!]!
   getMe: User!
@@ -232,6 +245,7 @@ type Query {
   getTest(testId: String!): Test!
   getTestComments(testId: String!): [Comment!]!
   hello: String!
+  searchUsers(search: String!): [User!]!
 }
 
 type Question {
@@ -420,6 +434,15 @@ enum UserAuthType {
   GOOGLE
   PHONE
   TELEGRAM
+}
+
+type UserGroup {
+  expiresAt: DateTime!
+  groupId: String!
+  groupType: GroupType!
+  id: ID!
+  joinedAt: DateTime!
+  userId: String!
 }
 
 enum UserRole {

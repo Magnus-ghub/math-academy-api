@@ -36,3 +36,24 @@ export class Group {
   @Field()
   updatedAt: Date;
 }
+
+@ObjectType()
+export class UserGroup {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  userId: string;
+
+  @Field()
+  groupId: string;
+
+  @Field(() => GroupType)
+  groupType: GroupType;
+
+  @Field()
+  expiresAt: Date;
+
+  @Field()
+  joinedAt: Date;
+}

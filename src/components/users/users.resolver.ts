@@ -8,6 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../libs/enums/user.enum';
 import { User } from 'src/libs/dto/users/user';
 import { UserUpdate } from 'src/libs/dto/users/userUpdate';
+import { AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -28,19 +29,29 @@ export class UsersResolver {
     return this.usersService.updateUser(user.userId, input);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  @Query(() => [User])
+  async searchUsers(@Args('search') search: string) {
+    return this.usersService.searchUsers(search);
+  }
+
   // ADMIN only
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => User)
+  async adminUpdateUser(
+    @Args('userId') userId: string,
+    @Args('input') input: AdminUserUpdate,
+  ) {
+    return this.usersService.adminUpdateUser(userId, input);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Query(() => [User])
   async getAllUsers() {
     return this.usersService.getAllUsers();
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Mutation(() => User)
-  async blockUser(@Args('userId') userId: string) {
-    return this.usersService.blockUser(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

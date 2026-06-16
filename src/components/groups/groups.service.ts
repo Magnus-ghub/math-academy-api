@@ -45,6 +45,32 @@ export class GroupsService {
     return this.userGroupRepo.find({ where: { groupId } });
   }
 
+  async getGroupMemberIds(groupId: string): Promise<string[]> {
+    const rows = await this.userGroupRepo.find({
+      where: { groupId },
+      select: { userId: true },
+    });
+    return rows.map((r) => r.userId);
+  }
+
+  async addUserToGroup(groupId: string, userId: string): Promise<UserGroupEntity> {
+    const group = await this.getGroupById(groupId);
+
+    const existing = await this.userGroupRepo.findOne({ where: { groupId, userId } });
+    if (existing) return existing;
+
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
+
+    const entry = this.userGroupRepo.create({
+      userId,
+      groupId,
+      groupType: group.groupType,
+      expiresAt,
+    });
+    return this.userGroupRepo.save(entry);
+  }
+
   async getMemberCount(groupId: string): Promise<number> {
     return this.userGroupRepo.count({ where: { groupId } });
   }

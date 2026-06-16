@@ -5,6 +5,7 @@ import { UserEntity } from '../../schema/User.model';
 import { UserGroupEntity } from '../../schema/User_Group.model';
 import { UserRole, UserStatus } from '../../libs/enums/user.enum';
 import { UserUpdate } from 'src/libs/dto/users/userUpdate';
+import { AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
 import { Cron } from '@nestjs/schedule';
 import { LessThan } from 'typeorm';
 
@@ -38,17 +39,26 @@ export class UsersService {
     });
   }
 
-  // ADMIN
-  async getAllUsers(): Promise<UserEntity[]> {
-    return this.userRepo.find({
-      where: { userStatus: UserStatus.ACTIVE },
-      order: { createdAt: 'DESC' },
-    });
+  async searchUsers(search: string): Promise<UserEntity[]> {
+    return this.userRepo
+      .createQueryBuilder('u')
+      .where(
+        'u.userName ILIKE :q OR u.userLastName ILIKE :q OR u.userPhone ILIKE :q OR u.telegramId ILIKE :q',
+        { q: `%${search}%` },
+      )
+      .orderBy('u.userName', 'ASC')
+      .limit(20)
+      .getMany();
   }
 
-  async blockUser(userId: string): Promise<UserEntity> {
-    await this.userRepo.update(userId, { userStatus: UserStatus.BLOCKED });
+  // ADMIN
+  async adminUpdateUser(userId: string, input: AdminUserUpdate): Promise<UserEntity> {
+    await this.userRepo.update(userId, { ...input });
     return this.getMe(userId);
+  }
+
+  async getAllUsers(): Promise<UserEntity[]> {
+    return this.userRepo.find({ order: { createdAt: 'DESC' } });
   }
 
   async changeRole(userId: string, userRole: UserRole): Promise<UserEntity> {

@@ -4,6 +4,7 @@ import { GroupsService } from './groups.service';
 import { Group } from '../../libs/dto/group/group';
 import { GroupInput } from '../../libs/dto/group/groupInput';
 import { GroupUpdate } from '../../libs/dto/group/groupUpdate';
+import { UserGroup } from '../../libs/dto/group/group';
 import { UserRole } from '../../libs/enums/user.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -43,5 +44,22 @@ export class GroupsResolver {
   @Query(() => Group)
   async getGroupById(@Args('groupId') groupId: string) {
     return this.groupsService.getGroupById(groupId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  @Query(() => [String])
+  async getGroupMemberIds(@Args('groupId') groupId: string) {
+    return this.groupsService.getGroupMemberIds(groupId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  @Mutation(() => UserGroup)
+  async addUserToGroup(
+    @Args('groupId') groupId: string,
+    @Args('userId') userId: string,
+  ) {
+    return this.groupsService.addUserToGroup(groupId, userId);
   }
 }
