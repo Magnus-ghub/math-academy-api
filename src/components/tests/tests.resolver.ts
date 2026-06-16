@@ -6,6 +6,7 @@ import { TestInput } from '../../libs/dto/test/testInput';
 import { TestUpdate } from '../../libs/dto/test/testUpdate';
 import { Question } from '../../libs/dto/question/question';
 import { QuestionInput } from '../../libs/dto/question/questionInput';
+import { QuestionUpdate } from '../../libs/dto/question/questionUpdate';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -71,6 +72,16 @@ export class TestsResolver {
   @Query(() => [Question])
   async getQuestions(@Args('testId') testId: string) {
     return this.testsService.getQuestionsByTest(testId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.TEACHER, UserRole.ADMIN)
+  @Mutation(() => Question)
+  async updateQuestion(
+    @Args('questionId') questionId: string,
+    @Args('input') input: QuestionUpdate,
+  ) {
+    return this.testsService.updateQuestion(questionId, input);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

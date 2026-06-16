@@ -12,10 +12,12 @@ import { diskStorage, memoryStorage } from 'multer';
 import { extname, join } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import * as mammoth from 'mammoth';
+import * as fs from 'fs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QuestionEntity } from '../../schema/Question.model';
 import { TestEntity } from '../../schema/Test.model';
+import { TestAccess, TestType } from '../../libs/enums/test.enum';
 
 @Controller('upload')
 export class UploadController {
@@ -110,6 +112,100 @@ export class UploadController {
 
     return {
       success: true,
+      totalQuestions: savedCount,
+      message: `${savedCount} ta savol muvaffaqiyatli yuklandi`,
+    };
+  }
+
+  @Post('json-test')
+  @UseGuards(JwtAuthGuard)
+  async uploadJsonTest(
+    @Body() body: {
+      testId?: string;
+      testTitle?: string;
+      testType?: string;
+      testAccess?: string;
+      duration?: number;
+      groupId?: string;
+      testDesc?: string;
+      createdBy?: string;
+      questions: {
+        questionText: string;
+        questionImage?: string;
+        options: string[];
+        correctAnswer: number;
+        explanation?: string;
+      }[];
+    },
+  ) {
+    if (!body.questions || !Array.isArray(body.questions) || body.questions.length === 0) {
+      throw new BadRequestException('questions massivi bo\'sh');
+    }
+
+    let testId = body.testId;
+
+    // testId berilmagan bo'lsa yangi test yaratamiz
+    if (!testId) {
+      if (!body.testTitle) throw new BadRequestException('testTitle kerak');
+      const test = this.testRepo.create({
+        testTitle: body.testTitle,
+        testType: (body.testType as TestType) || TestType.DTM,
+        testAccess: (body.testAccess as TestAccess) || TestAccess.PUBLIC,
+        duration: body.duration || 90,
+        groupId: body.groupId || undefined,
+        testDesc: body.testDesc || undefined,
+        createdBy: body.createdBy || 'admin',
+      });
+      const saved = await this.testRepo.save(test);
+      testId = saved.id;
+    } else {
+      const existing = await this.testRepo.findOne({ where: { id: testId } });
+      if (!existing) throw new BadRequestException('Test topilmadi');
+    }
+
+    const uploadsDir = join(process.cwd(), 'uploads');
+
+    let savedCount = 0;
+    for (let i = 0; i < body.questions.length; i++) {
+      const q = body.questions[i];
+      if (!q.questionText || !Array.isArray(q.options) || q.options.length !== 4) continue;
+
+      let imageUrl: string | undefined;
+
+      // base64 rasm bo'lsa faylga saqlash
+      if (q.questionImage && q.questionImage.startsWith('data:image')) {
+        try {
+          const matches = q.questionImage.match(/^data:image\/(\w+);base64,(.+)$/);
+          if (matches) {
+            const ext = matches[1];
+            const data = matches[2];
+            const filename = `${Date.now()}-${i}.${ext}`;
+            fs.writeFileSync(join(uploadsDir, filename), Buffer.from(data, 'base64'));
+            imageUrl = `/uploads/${filename}`;
+          }
+        } catch {}
+      } else if (q.questionImage?.startsWith('/uploads/') || q.questionImage?.startsWith('http')) {
+        imageUrl = q.questionImage;
+      }
+
+      const question = this.questionRepo.create({
+        testId,
+        questionText: q.questionText,
+        questionImage: imageUrl,
+        options: q.options,
+        correctAnswer: q.correctAnswer ?? 0,
+        explanation: q.explanation || undefined,
+        orderIndex: i + 1,
+      });
+      await this.questionRepo.save(question);
+      savedCount++;
+    }
+
+    await this.testRepo.update(testId, { totalQuestions: savedCount });
+
+    return {
+      success: true,
+      testId,
       totalQuestions: savedCount,
       message: `${savedCount} ta savol muvaffaqiyatli yuklandi`,
     };

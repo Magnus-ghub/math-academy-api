@@ -177,6 +177,7 @@ type Mutation {
   telegramLogin(authDate: Int!, hash: String!, telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateContent(contentId: String!, input: ContentUpdate!): Content!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
+  updateQuestion(input: QuestionUpdate!, questionId: String!): Question!
   updateTest(input: TestUpdate!, testId: String!): Test!
   updateUser(input: UserUpdate!): User!
 }
@@ -275,6 +276,14 @@ input QuestionInput {
 enum QuestionType {
   MULTI
   SINGLE
+}
+
+input QuestionUpdate {
+  correctAnswer: Int
+  explanation: String
+  options: [String!]
+  questionImage: String
+  questionText: String
 }
 
 type Report {

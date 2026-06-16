@@ -94,6 +94,13 @@ export class TestsService {
     });
   }
 
+  async updateQuestion(questionId: string, input: any): Promise<QuestionEntity> {
+    await this.questionRepo.update(questionId, { ...input });
+    const q = await this.questionRepo.findOne({ where: { id: questionId } });
+    if (!q) throw new NotFoundException('Question not found');
+    return q;
+  }
+
   async deleteQuestion(questionId: string): Promise<boolean> {
     const question = await this.questionRepo.findOne({ where: { id: questionId } });
     if (!question) throw new NotFoundException('Question not found');
