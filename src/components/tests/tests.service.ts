@@ -109,6 +109,14 @@ export class TestsService {
     return true;
   }
 
+  async deleteTest(testId: string): Promise<boolean> {
+    const test = await this.testRepo.findOne({ where: { id: testId } });
+    if (!test) throw new NotFoundException('Test not found');
+    await this.questionRepo.delete({ testId });
+    await this.testRepo.remove(test);
+    return true;
+  }
+
   // Admin
   async getAllTests(): Promise<TestEntity[]> {
     return this.testRepo.find({ order: { createdAt: 'DESC' } });

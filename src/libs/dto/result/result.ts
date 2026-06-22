@@ -13,6 +13,12 @@ export class Result {
   testId: string;
 
   @Field({ nullable: true })
+  testTitle?: string;
+
+  @Field({ nullable: true })
+  testType?: string;
+
+  @Field({ nullable: true })
   groupId?: string;
 
   @Field(() => ResultStatus)

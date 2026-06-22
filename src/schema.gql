@@ -169,6 +169,7 @@ type Mutation {
   createTest(input: TestInput!): Test!
   deleteContent(contentId: String!): Boolean!
   deleteQuestion(questionId: String!): Boolean!
+  deleteTest(testId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   rejectComment(commentId: String!): Comment!
   rejectReport(reportId: String!): Report!
@@ -337,6 +338,8 @@ type Result {
   resultStatus: ResultStatus!
   score: Float!
   testId: String!
+  testTitle: String
+  testType: String
   totalQuestions: Int!
   userId: String!
 }
@@ -405,6 +408,8 @@ enum TestType {
   ATTESTATSIYA_GROUP
   DTM
   DTM_GROUP
+  MAJBURIY_BLOK
+  MAJBURIY_BLOK_GROUP
   MILLIY_GROUP
   MILLIY_SERTIFIKAT
   SAT
@@ -419,6 +424,7 @@ input TestUpdate {
   testImage: String
   testStatus: TestStatus
   testTitle: String
+  testType: TestType
 }
 
 type User {

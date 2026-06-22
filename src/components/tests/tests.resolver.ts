@@ -98,4 +98,11 @@ export class TestsResolver {
   async getAllTests() {
     return this.testsService.getAllTests();
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => Boolean)
+  async deleteTest(@Args('testId') testId: string) {
+    return this.testsService.deleteTest(testId);
+  }
 }

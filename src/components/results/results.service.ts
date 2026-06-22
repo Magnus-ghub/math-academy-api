@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ResultEntity } from '../../schema/Result.model';
 import { TestEntity } from '../../schema/Test.model';
 import { QuestionEntity } from '../../schema/Question.model';
@@ -63,17 +63,32 @@ export class ResultsService {
     return this.resultRepo.save(result);
   }
 
-  async getMyResults(userId: string): Promise<ResultEntity[]> {
-    return this.resultRepo.find({
+  async getMyResults(userId: string): Promise<any[]> {
+    const results = await this.resultRepo.find({
       where: { userId },
       order: { createdAt: 'DESC' },
     });
+
+    const testIds = [...new Set(results.map((r) => r.testId))];
+    const tests = await this.testRepo.findBy({ id: In(testIds) });
+    const testMap = new Map<string, TestEntity>(tests.map((t) => [t.id, t]));
+
+    return results.map((r) => ({
+      ...r,
+      testTitle: testMap.get(r.testId)?.testTitle ?? null,
+      testType: testMap.get(r.testId)?.testType ?? null,
+    }));
   }
 
-  async getResultById(resultId: string): Promise<ResultEntity> {
+  async getResultById(resultId: string): Promise<any> {
     const result = await this.resultRepo.findOne({ where: { id: resultId } });
     if (!result) throw new NotFoundException('Result not found');
-    return result;
+    const test = await this.testRepo.findOne({ where: { id: result.testId } });
+    return {
+      ...result,
+      testTitle: test?.testTitle ?? null,
+      testType: test?.testType ?? null,
+    };
   }
 
   async getLeaderboard(testId: string): Promise<ResultEntity[]> {
