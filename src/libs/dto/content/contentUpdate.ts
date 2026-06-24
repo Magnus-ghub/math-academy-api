@@ -1,9 +1,14 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { IsString, IsEnum, IsOptional } from 'class-validator';
-import { ContentStatus } from 'src/libs/enums/content.enum';
+import { ContentStatus, ContentType } from 'src/libs/enums/content.enum';
 
 @InputType()
 export class ContentUpdate {
+  @Field(() => ContentType, { nullable: true })
+  @IsOptional()
+  @IsEnum(ContentType)
+  contentType?: ContentType;
+
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
@@ -28,4 +33,9 @@ export class ContentUpdate {
   @IsOptional()
   @IsEnum(ContentStatus)
   contentStatus?: ContentStatus;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  metaJson?: string;
 }

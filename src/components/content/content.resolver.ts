@@ -31,6 +31,16 @@ export class ContentResolver {
     return this.contentService.getEvents();
   }
 
+  @Query(() => [Content])
+  async getFaqs() {
+    return this.contentService.getFaqs();
+  }
+
+  @Query(() => Content, { nullable: true })
+  async getBook() {
+    return this.contentService.getBook();
+  }
+
   @Query(() => Content)
   async getContent(@Args('contentId') contentId: string) {
     await this.contentService.incrementView(contentId);

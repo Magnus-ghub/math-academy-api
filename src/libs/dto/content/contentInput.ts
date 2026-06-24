@@ -26,4 +26,9 @@ export class ContentInput {
   @IsOptional()
   @IsString()
   contentVideo?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  metaJson?: string;
 }

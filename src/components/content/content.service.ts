@@ -48,6 +48,20 @@ export class ContentService {
     return this.getPublishedByType(ContentType.EVENT);
   }
 
+  async getFaqs(): Promise<ContentEntity[]> {
+    return this.contentRepo.find({
+      where: { contentType: ContentType.FAQ, contentStatus: ContentStatus.PUBLISHED },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async getBook(): Promise<ContentEntity | null> {
+    return this.contentRepo.findOne({
+      where: { contentType: ContentType.BOOK },
+      order: { updatedAt: 'DESC' },
+    });
+  }
+
   async incrementView(contentId: string): Promise<void> {
     await this.contentRepo.increment({ id: contentId }, 'viewCount', 1);
   }

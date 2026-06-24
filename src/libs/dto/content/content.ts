@@ -22,7 +22,10 @@ export class Content {
   contentImage?: string;
 
   @Field({ nullable: true })
-  contentVideo?: string;   // youtube link
+  contentVideo?: string;
+
+  @Field({ nullable: true })
+  metaJson?: string;
 
   @Field(() => Int)
   viewCount: number;

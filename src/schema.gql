@@ -70,6 +70,7 @@ type Content {
   createdAt: DateTime!
   createdBy: String!
   id: ID!
+  metaJson: String
   publishedAt: DateTime
   updatedAt: DateTime!
   viewCount: Int!
@@ -81,6 +82,7 @@ input ContentInput {
   contentTitle: String!
   contentType: ContentType!
   contentVideo: String
+  metaJson: String
 }
 
 enum ContentStatus {
@@ -91,6 +93,7 @@ enum ContentStatus {
 
 enum ContentType {
   BANNER
+  BOOK
   EVENT
   FAQ
   NEWS
@@ -103,7 +106,9 @@ input ContentUpdate {
   contentImage: String
   contentStatus: ContentStatus
   contentTitle: String
+  contentType: ContentType
   contentVideo: String
+  metaJson: String
 }
 
 enum DTMType {
@@ -232,8 +237,10 @@ type Query {
   getAllPayments: [Payment!]!
   getAllTests: [Test!]!
   getAllUsers: [User!]!
+  getBook: Content
   getContent(contentId: String!): Content!
   getEvents: [Content!]!
+  getFaqs: [Content!]!
   getGroupById(groupId: String!): Group!
   getGroupMemberIds(groupId: String!): [String!]!
   getGroupTests(groupId: String!): [Test!]!

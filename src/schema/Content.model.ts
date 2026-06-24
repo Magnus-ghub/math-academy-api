@@ -13,10 +13,10 @@ export class ContentEntity {
   contentStatus: ContentStatus;
 
   @Column()
-  title: string;
+  contentTitle: string;
 
   @Column({ nullable: true, type: 'text' })
-  desc: string;
+  contentDesc: string;
 
   @Column({ nullable: true })
   contentImage: string;
@@ -29,6 +29,9 @@ export class ContentEntity {
 
   @Column()
   createdBy: string;
+
+  @Column({ type: 'text', nullable: true })
+  metaJson: string;
 
   @Column({ nullable: true })
   publishedAt: Date;
