@@ -5,12 +5,6 @@ export enum TestType {
   SAT = 'SAT',
   MILLIY_SERTIFIKAT = 'MILLIY_SERTIFIKAT',
   ATTESTATSIYA = 'ATTESTATSIYA',
-  MAJBURIY_BLOK = 'MAJBURIY_BLOK',
-  DTM_GROUP = 'DTM_GROUP',
-  SAT_GROUP = 'SAT_GROUP',
-  MILLIY_GROUP = 'MILLIY_GROUP',
-  ATTESTATSIYA_GROUP = 'ATTESTATSIYA_GROUP',
-  MAJBURIY_BLOK_GROUP = 'MAJBURIY_BLOK_GROUP',
 }
 registerEnumType(TestType, { name: 'TestType' });
 
@@ -40,3 +34,10 @@ export enum TestBlock {
   ELECTIVE = 'ELECTIVE', // tanlangan fan bloki
 }
 registerEnumType(TestBlock, { name: 'TestBlock' });
+
+export enum DTMType {
+  MAJBURIY = 'MAJBURIY',
+  ASOSIY = 'ASOSIY',
+  FULL = 'FULL',
+}
+registerEnumType(DTMType, { name: 'DTMType' });

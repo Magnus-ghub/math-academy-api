@@ -106,6 +106,12 @@ input ContentUpdate {
   contentVideo: String
 }
 
+enum DTMType {
+  ASOSIY
+  FULL
+  MAJBURIY
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -360,12 +366,14 @@ enum ResultStatus {
 type Test {
   createdAt: DateTime!
   createdBy: String!
+  dtmType: DTMType
   duration: Int!
   groupId: String
   id: ID!
   testAccess: TestAccess!
   testBlock: TestBlock
   testDesc: String
+  testDifficulty: TestDifficulty!
   testImage: String
   testStatus: TestStatus!
   testTitle: String!
@@ -386,12 +394,20 @@ enum TestBlock {
   MANDATORY
 }
 
+enum TestDifficulty {
+  EASY
+  HARD
+  STANDART
+}
+
 input TestInput {
+  dtmType: DTMType
   duration: Int!
   groupId: String
   testAccess: TestAccess!
   testBlock: TestBlock
   testDesc: String
+  testDifficulty: TestDifficulty
   testImage: String
   testTitle: String!
   testType: TestType!
@@ -405,22 +421,18 @@ enum TestStatus {
 
 enum TestType {
   ATTESTATSIYA
-  ATTESTATSIYA_GROUP
   DTM
-  DTM_GROUP
-  MAJBURIY_BLOK
-  MAJBURIY_BLOK_GROUP
-  MILLIY_GROUP
   MILLIY_SERTIFIKAT
   SAT
-  SAT_GROUP
 }
 
 input TestUpdate {
+  dtmType: DTMType
   duration: Int
   testAccess: TestAccess
   testBlock: TestBlock
   testDesc: String
+  testDifficulty: TestDifficulty
   testImage: String
   testStatus: TestStatus
   testTitle: String

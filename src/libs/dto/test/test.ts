@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
-import { TestType, TestAccess, TestStatus, TestBlock } from 'src/libs/enums/test.enum';
+import { TestType, TestAccess, TestStatus, TestBlock, DTMType, TestDifficulty } from 'src/libs/enums/test.enum';
 
 @ObjectType()
 export class Test {
@@ -17,6 +17,12 @@ export class Test {
 
   @Field(() => TestBlock, { nullable: true })
   testBlock?: TestBlock;
+
+  @Field(() => DTMType, { nullable: true })
+  dtmType?: DTMType;
+
+  @Field(() => TestDifficulty)
+  testDifficulty: TestDifficulty;
 
   @Field()
   testTitle: string;

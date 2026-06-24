@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { TestType, TestAccess, TestStatus, TestBlock } from '../libs/enums/test.enum';
+import { TestType, TestAccess, TestStatus, TestBlock, DTMType, TestDifficulty } from '../libs/enums/test.enum';
 
 @Entity('tests')
 export class TestEntity {
@@ -17,6 +17,12 @@ export class TestEntity {
 
   @Column({ type: 'enum', enum: TestBlock, nullable: true })
   testBlock: TestBlock;
+
+  @Column({ type: 'enum', enum: DTMType, nullable: true })
+  dtmType: DTMType;
+
+  @Column({ type: 'enum', enum: TestDifficulty, default: TestDifficulty.STANDART })
+  testDifficulty: TestDifficulty;
 
   @Column()
   testTitle: string;
