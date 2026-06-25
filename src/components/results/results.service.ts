@@ -6,6 +6,7 @@ import { TestEntity } from '../../schema/Test.model';
 import { QuestionEntity } from '../../schema/Question.model';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { ResultStatus } from '../../libs/enums/result.enum';
+import { TestType } from '../../libs/enums/test.enum';
 
 @Injectable()
 export class ResultsService {
@@ -84,11 +85,57 @@ export class ResultsService {
     const result = await this.resultRepo.findOne({ where: { id: resultId } });
     if (!result) throw new NotFoundException('Result not found');
     const test = await this.testRepo.findOne({ where: { id: result.testId } });
-    return {
+
+    const base = {
       ...result,
       testTitle: test?.testTitle ?? null,
       testType: test?.testType ?? null,
     };
+
+    if (test?.testType !== TestType.ATTESTATSIYA) return base;
+
+    const questions = await this.questionRepo.find({
+      where: { testId: result.testId },
+      order: { orderIndex: 'ASC' },
+    });
+
+    const questionMap = new Map(questions.map((q) => [q.id, q]));
+    const totalPoints = result.correctAnswers * 2;
+    const grade = this.getAttestationGrade(totalPoints);
+
+    const sectionOrder: string[] = [];
+    const sectionMap = new Map<string, { orderIndex: number; questionId: string; isCorrect: boolean }[]>();
+
+    for (const answer of result.answers) {
+      const question = questionMap.get(answer.questionId);
+      if (!question) continue;
+      const sectionName = question.section || 'Asosiy';
+      if (!sectionMap.has(sectionName)) {
+        sectionMap.set(sectionName, []);
+        sectionOrder.push(sectionName);
+      }
+      sectionMap.get(sectionName)!.push({
+        orderIndex: question.orderIndex,
+        questionId: answer.questionId,
+        isCorrect: answer.isCorrect,
+      });
+    }
+
+    const sections = sectionOrder.map((name) => ({
+      name,
+      questions: sectionMap.get(name)!.sort((a, b) => a.orderIndex - b.orderIndex),
+    }));
+
+    return { ...base, attestationData: { totalPoints, grade, sections } };
+  }
+
+  private getAttestationGrade(points: number): string | null {
+    if (points > 86) return 'Oliy toifa + 70% ustama';
+    if (points >= 80) return 'Oliy toifa';
+    if (points >= 71) return 'Birinchi toifa';
+    if (points >= 61) return 'Ikkinchi toifa';
+    if (points >= 56) return 'Mutaxassis';
+    return null;
   }
 
   async getLeaderboard(testId: string): Promise<ResultEntity[]> {

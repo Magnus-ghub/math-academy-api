@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(brew services *)",
+      "Bash(psql -U math_user -h localhost -d math_academy -c \"\\\\dt\")",
+      "Bash(psql -U nomozof -h localhost -c \"\\\\l\")",
+      "Bash(docker-compose down *)",
+      "Bash(docker-compose up *)",
+      "Bash(pg_dump -U math_user -h localhost -d math_academy --no-owner --no-acl > ~/math_academy_dump.sql && echo \"Dump muvaffaqiyatli: $\\(wc -l < ~/math_academy_dump.sql\\) qator\")",
+      "Bash(psql -U math_user -h localhost -d math_academy -c \"SELECT COUNT\\(*\\) FROM users; SELECT COUNT\\(*\\) FROM tests; SELECT COUNT\\(*\\) FROM contents; SELECT COUNT\\(*\\) FROM groups;\")",
+      "Bash(pg_dump -U math_user -h localhost -d math_academy --no-owner --no-acl --inserts > ~/math_academy_inserts.sql && echo \"Done: $\\(wc -l < ~/math_academy_inserts.sql\\) qator\")",
+      "Bash(PGPASSWORD=math123 psql -h localhost -U math_user -d math_academy -c \"SELECT id, \\\\\"testId\\\\\", \\\\\"questionType\\\\\", \\\\\"questionText\\\\\", options, \\\\\"correctAnswer\\\\\", \\\\\"orderIndex\\\\\" FROM questions LIMIT 20;\")",
+      "Bash(PGPASSWORD=math123 psql -h localhost -U math_user -d math_academy -c \"\\\\dt\")"
+    ],
+    "additionalDirectories": [
+      "/Users/nomozof"
+    ]
+  }
+}

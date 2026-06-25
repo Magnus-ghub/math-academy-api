@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
 import { ReportType, ReportStatus, ReportReason } from '../../enums/report.enum';
 
 @ObjectType()
@@ -26,6 +26,12 @@ export class Report {
 
   @Field({ nullable: true })
   testId?: string;
+
+  @Field({ nullable: true })
+  testTitle?: string;
+
+  @Field(() => Int, { nullable: true })
+  questionOrder?: number;
 
   @Field()
   createdAt: Date;

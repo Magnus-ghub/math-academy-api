@@ -2,6 +2,39 @@ import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { ResultStatus } from 'src/libs/enums/result.enum';
 
 @ObjectType()
+export class AttestationQuestionResult {
+  @Field(() => Int)
+  orderIndex: number;
+
+  @Field()
+  questionId: string;
+
+  @Field()
+  isCorrect: boolean;
+}
+
+@ObjectType()
+export class AttestationSection {
+  @Field()
+  name: string;
+
+  @Field(() => [AttestationQuestionResult])
+  questions: AttestationQuestionResult[];
+}
+
+@ObjectType()
+export class AttestationData {
+  @Field(() => Int)
+  totalPoints: number;
+
+  @Field({ nullable: true })
+  grade?: string;
+
+  @Field(() => [AttestationSection])
+  sections: AttestationSection[];
+}
+
+@ObjectType()
 export class Result {
   @Field(() => ID)
   id: string;
@@ -44,6 +77,9 @@ export class Result {
 
   @Field()
   createdAt: Date;
+
+  @Field(() => AttestationData, { nullable: true })
+  attestationData?: AttestationData;
 }
 
 @ObjectType()

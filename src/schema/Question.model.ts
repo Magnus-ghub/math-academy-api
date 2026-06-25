@@ -18,7 +18,10 @@ export class QuestionEntity {
   @Column({ nullable: true })
   questionImage: string;
 
-  @Column('simple-array')
+  @Column({ nullable: true })
+  section: string;
+
+  @Column({ type: 'json' })
   options: string[];
 
   @Column()

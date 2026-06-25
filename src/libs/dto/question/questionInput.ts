@@ -45,6 +45,11 @@ export class QuestionInput {
   @IsString()
   explanation?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  section?: string;
+
   @Field(() => Int)
   @IsInt()
   @Min(1)

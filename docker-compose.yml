@@ -26,6 +26,8 @@ services:
       POSTGRES_DB: math_academy
       POSTGRES_USER: math_user
       POSTGRES_PASSWORD: math123
+    ports:
+      - 5433:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

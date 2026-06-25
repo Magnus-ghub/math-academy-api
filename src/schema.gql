@@ -26,6 +26,23 @@ input AnswerInput {
   timeSpent: Int!
 }
 
+type AttestationData {
+  grade: String
+  sections: [AttestationSection!]!
+  totalPoints: Int!
+}
+
+type AttestationQuestionResult {
+  isCorrect: Boolean!
+  orderIndex: Int!
+  questionId: String!
+}
+
+type AttestationSection {
+  name: String!
+  questions: [AttestationQuestionResult!]!
+}
+
 type AuthResponse {
   accessToken: String!
   user: User!
@@ -273,6 +290,7 @@ type Question {
   questionImage: String
   questionText: String!
   questionType: QuestionType!
+  section: String
   testId: String!
 }
 
@@ -284,6 +302,7 @@ input QuestionInput {
   questionImage: String
   questionText: String!
   questionType: QuestionType
+  section: String
   testId: String!
 }
 
@@ -298,17 +317,20 @@ input QuestionUpdate {
   options: [String!]
   questionImage: String
   questionText: String
+  section: String
 }
 
 type Report {
   createdAt: DateTime!
   id: ID!
   questionId: String
+  questionOrder: Int
   reportReason: ReportReason!
   reportStatus: ReportStatus!
   reportText: String
   reportType: ReportType!
   testId: String
+  testTitle: String
   userId: String!
 }
 
@@ -342,6 +364,7 @@ enum ReportType {
 
 type Result {
   answers: [AnswerDto!]!
+  attestationData: AttestationData
   correctAnswers: Int!
   createdAt: DateTime!
   duration: Int!

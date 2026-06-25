@@ -16,7 +16,10 @@ export class Question {
   questionText: string;
 
   @Field({ nullable: true })
-  questionImage?: string; // formula yoki rasm bo'lsa
+  questionImage?: string;
+
+  @Field({ nullable: true })
+  section?: string;
 
   @Field(() => [String])
   options: string[]; // A, B, C, D variantlar

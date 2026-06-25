@@ -29,4 +29,9 @@ export class QuestionUpdate {
   @IsOptional()
   @IsString()
   explanation?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  section?: string;
 }
