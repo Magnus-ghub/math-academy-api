@@ -8,6 +8,7 @@ export enum ContentType {
   FAQ           = 'FAQ',
   BANNER        = 'BANNER',
   BOOK          = 'BOOK',
+  LESSON        = 'LESSON',
 }
 registerEnumType(ContentType, { name: 'ContentType' });
 

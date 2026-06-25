@@ -1,6 +1,7 @@
 import { Resolver, Mutation, Args, Int } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import { User } from 'src/libs/dto/users/user';
+import { UserGroup } from 'src/libs/dto/group/group';
 import { ObjectType, Field } from '@nestjs/graphql';
 
 @ObjectType()
@@ -10,6 +11,9 @@ export class AuthResponse {
 
   @Field(() => User)
   user: User;
+
+  @Field(() => [UserGroup])
+  groups: UserGroup[];
 }
 
 @ObjectType()

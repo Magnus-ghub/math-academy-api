@@ -27,6 +27,9 @@ export class ContentEntity {
   @Column({ default: 0 })
   viewCount: number;
 
+  @Column({ nullable: true })
+  groupId: string;
+
   @Column()
   createdBy: string;
 

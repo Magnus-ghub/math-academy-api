@@ -1,7 +1,7 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { GroupsService } from './groups.service';
-import { Group } from '../../libs/dto/group/group';
+import { Group, GroupMember } from '../../libs/dto/group/group';
 import { GroupInput } from '../../libs/dto/group/groupInput';
 import { GroupUpdate } from '../../libs/dto/group/groupUpdate';
 import { UserGroup } from '../../libs/dto/group/group';
@@ -9,10 +9,18 @@ import { UserRole } from '../../libs/enums/user.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Group)
 export class GroupsResolver {
   constructor(private groupsService: GroupsService) {}
+
+  // Foydalanuvchi o'z guruhlarini DB dan oladi (har doim yangi)
+  @UseGuards(JwtAuthGuard)
+  @Query(() => [UserGroup])
+  async getMyGroups(@CurrentUser() user: any) {
+    return this.groupsService.getMyGroups(user.userId);
+  }
 
   // ADMIN only
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -61,5 +69,22 @@ export class GroupsResolver {
     @Args('userId') userId: string,
   ) {
     return this.groupsService.addUserToGroup(groupId, userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => Boolean)
+  async removeUserFromGroup(
+    @Args('groupId') groupId: string,
+    @Args('userId') userId: string,
+  ) {
+    return this.groupsService.removeUserFromGroup(groupId, userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  @Query(() => [GroupMember])
+  async getGroupMembers(@Args('groupId') groupId: string) {
+    return this.groupsService.getGroupMembers(groupId);
   }
 }

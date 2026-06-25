@@ -47,6 +47,21 @@ export class ContentResolver {
     return this.contentService.getContentById(contentId);
   }
 
+  // Guruh a'zolari uchun — DB dan membership va group status tekshiriladi
+  @UseGuards(JwtAuthGuard)
+  @Query(() => [Content])
+  async getGroupMaterials(
+    @Args('groupId') groupId: string,
+    @CurrentUser() user: any,
+  ) {
+    const activeGroups = await this.contentService.getActiveUserGroups(user.userId);
+    const isMember = activeGroups.some(
+      (g) => g.groupId === groupId && new Date(g.expiresAt) > new Date(),
+    );
+    if (!isMember) throw new Error('Bu guruhga kirishga ruxsat yo\'q');
+    return this.contentService.getGroupMaterials(groupId);
+  }
+
   // ADMIN
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

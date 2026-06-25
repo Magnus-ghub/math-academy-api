@@ -45,6 +45,7 @@ type AttestationSection {
 
 type AuthResponse {
   accessToken: String!
+  groups: [UserGroup!]!
   user: User!
 }
 
@@ -86,6 +87,7 @@ type Content {
   contentVideo: String
   createdAt: DateTime!
   createdBy: String!
+  groupId: String
   id: ID!
   metaJson: String
   publishedAt: DateTime
@@ -99,6 +101,7 @@ input ContentInput {
   contentTitle: String!
   contentType: ContentType!
   contentVideo: String
+  groupId: String
   metaJson: String
 }
 
@@ -113,6 +116,7 @@ enum ContentType {
   BOOK
   EVENT
   FAQ
+  LESSON
   NEWS
   SUCCESS_STORY
   TEACHER
@@ -125,6 +129,7 @@ input ContentUpdate {
   contentTitle: String
   contentType: ContentType
   contentVideo: String
+  groupId: String
   metaJson: String
 }
 
@@ -159,6 +164,19 @@ input GroupInput {
   groupName: String!
   groupType: GroupType!
   telegramChatId: String!
+}
+
+type GroupMember {
+  expiresAt: DateTime!
+  id: ID!
+  joinedAt: DateTime!
+  telegramId: String
+  userAuthType: UserAuthType!
+  userImage: String
+  userLastName: String
+  userName: String
+  userPhone: String
+  userRole: UserRole!
 }
 
 enum GroupStatus {
@@ -201,6 +219,7 @@ type Mutation {
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   rejectComment(commentId: String!): Comment!
   rejectReport(reportId: String!): Report!
+  removeUserFromGroup(groupId: String!, userId: String!): Boolean!
   resolveReport(reportId: String!): Report!
   submitTest(input: ResultInput!): Result!
   telegramLogin(authDate: Int!, hash: String!, telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
@@ -259,10 +278,13 @@ type Query {
   getEvents: [Content!]!
   getFaqs: [Content!]!
   getGroupById(groupId: String!): Group!
+  getGroupMaterials(groupId: String!): [Content!]!
   getGroupMemberIds(groupId: String!): [String!]!
+  getGroupMembers(groupId: String!): [GroupMember!]!
   getGroupTests(groupId: String!): [Test!]!
   getLeaderboard(testId: String!): [Result!]!
   getMe: User!
+  getMyGroups: [UserGroup!]!
   getMyPayments: [Payment!]!
   getMyResults: [Result!]!
   getPendingComments: [Comment!]!
@@ -496,6 +518,7 @@ enum UserAuthType {
 type UserGroup {
   expiresAt: DateTime!
   groupId: String!
+  groupName: String
   groupType: GroupType!
   id: ID!
   joinedAt: DateTime!

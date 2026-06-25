@@ -38,4 +38,9 @@ export class ContentUpdate {
   @IsOptional()
   @IsString()
   metaJson?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  groupId?: string;
 }

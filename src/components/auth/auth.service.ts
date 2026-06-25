@@ -115,14 +115,11 @@ export class AuthService {
 
   // user_groups jadvalini yangilash
   private async syncUserGroups(user: UserEntity, memberGroups: GroupEntity[]) {
-    // Mavjud user_groups larni o'chirish
     await this.userGroupRepo.delete({ userId: user.id });
 
-    // Yangilarini qo'shish
     for (const group of memberGroups) {
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
-
       const userGroup = this.userGroupRepo.create({
         userId: user.id,
         groupId: group.id,
@@ -132,7 +129,11 @@ export class AuthService {
       await this.userGroupRepo.save(userGroup);
     }
 
-    return this.userGroupRepo.find({ where: { userId: user.id } });
+    const saved = await this.userGroupRepo.find({ where: { userId: user.id } });
+    const nameMap = new Map(memberGroups.map((g) => [g.id, g.groupName]));
+    return saved.map((ug) =>
+      Object.assign(ug, { groupName: nameMap.get(ug.groupId) ?? '' }),
+    );
   }
 
   // Telegram login
@@ -173,6 +174,7 @@ export class AuthService {
     return {
       accessToken: this.generateToken(user, userGroups),
       user,
+      groups: userGroups,
     };
   }
 
@@ -206,6 +208,7 @@ export class AuthService {
     return {
       accessToken: this.generateToken(user, userGroups),
       user,
+      groups: userGroups,
     };
   }
 

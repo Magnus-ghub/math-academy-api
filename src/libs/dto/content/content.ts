@@ -30,8 +30,11 @@ export class Content {
   @Field(() => Int)
   viewCount: number;
 
+  @Field({ nullable: true })
+  groupId?: string;
+
   @Field()
-  createdBy: string;       // adminId
+  createdBy: string;
 
   @Field({ nullable: true })
   publishedAt?: Date;
