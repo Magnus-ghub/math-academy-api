@@ -426,6 +426,7 @@ type Test {
   testDesc: String
   testDifficulty: TestDifficulty!
   testImage: String
+  testPrice: Int
   testStatus: TestStatus!
   testTitle: String!
   testType: TestType!
@@ -460,6 +461,7 @@ input TestInput {
   testDesc: String
   testDifficulty: TestDifficulty
   testImage: String
+  testPrice: Int
   testTitle: String!
   testType: TestType!
 }
@@ -485,6 +487,7 @@ input TestUpdate {
   testDesc: String
   testDifficulty: TestDifficulty
   testImage: String
+  testPrice: Int
   testStatus: TestStatus
   testTitle: String
   testType: TestType

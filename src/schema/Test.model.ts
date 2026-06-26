@@ -45,6 +45,9 @@ export class TestEntity {
   @Column({ nullable: true })
   groupId: string;
 
+  @Column({ type: 'int', nullable: true })
+  testPrice: number;
+
   @Column()
   createdBy: string;
 

@@ -1,5 +1,5 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsString, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsString, IsEnum, IsInt, IsOptional, Min, IsPositive } from 'class-validator';
 import { TestType, TestAccess, TestBlock, TestStatus, DTMType, TestDifficulty } from 'src/libs/enums/test.enum';
 
 @InputType()
@@ -54,4 +54,10 @@ export class TestUpdate {
   @IsOptional()
   @IsEnum(TestStatus)
   testStatus?: TestStatus;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  testPrice?: number;
 }

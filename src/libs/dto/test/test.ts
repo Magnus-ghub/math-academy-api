@@ -42,6 +42,9 @@ export class Test {
   @Field({ nullable: true })
   groupId?: string;
 
+  @Field(() => Int, { nullable: true })
+  testPrice?: number;
+
   @Field()
   createdBy: string;
 
