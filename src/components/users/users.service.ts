@@ -1,13 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { UserEntity } from '../../schema/User.model';
 import { UserGroupEntity } from '../../schema/User_Group.model';
-import { UserRole, UserStatus } from '../../libs/enums/user.enum';
-import { UserUpdate } from 'src/libs/dto/users/userUpdate';
-import { AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
+import { UserRole } from '../../libs/enums/user.enum';
+import { UserUpdate, AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
 import { Cron } from '@nestjs/schedule';
-import { LessThan } from 'typeorm';
 
 @Injectable()
 export class UsersService {
@@ -30,15 +28,6 @@ export class UsersService {
     return this.getMe(userId);
   }
 
-  async getMyGroups(userId: string): Promise<UserGroupEntity[]> {
-    return this.userGroupRepo.find({
-      where: {
-        userId,
-        expiresAt: MoreThan(new Date()),
-      },
-    });
-  }
-
   async searchUsers(search: string): Promise<UserEntity[]> {
     return this.userRepo
       .createQueryBuilder('u')
@@ -51,7 +40,6 @@ export class UsersService {
       .getMany();
   }
 
-  // ADMIN
   async adminUpdateUser(userId: string, input: AdminUserUpdate): Promise<UserEntity> {
     await this.userRepo.update(userId, { ...input });
     return this.getMe(userId);

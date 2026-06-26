@@ -7,8 +7,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../libs/enums/user.enum';
 import { User } from 'src/libs/dto/users/user';
-import { UserUpdate } from 'src/libs/dto/users/userUpdate';
-import { AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
+import { UserUpdate, AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -36,7 +35,6 @@ export class UsersResolver {
     return this.usersService.searchUsers(search);
   }
 
-  // ADMIN only
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Mutation(() => User)

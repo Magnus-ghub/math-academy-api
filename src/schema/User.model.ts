@@ -1,7 +1,6 @@
 import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-
 @Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')

@@ -27,10 +27,10 @@ export class User {
   @Field({ nullable: true })
   userImage?: string;
 
-  @Field(() => String, {nullable: true})
+  @Field(() => String, { nullable: true })
   userAddress?: string;
 
-  @Field(() => String, {nullable: true})
+  @Field(() => String, { nullable: true })
   userDesc?: string;
 
   @Field({ nullable: true })

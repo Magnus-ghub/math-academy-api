@@ -25,7 +25,6 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  // JWT token yaratish
   private generateToken(user: UserEntity, groups: UserGroupEntity[]) {
     const payload = {
       userId: user.id,

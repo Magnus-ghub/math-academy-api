@@ -58,10 +58,11 @@ export class ResultsService {
       finishedAt: new Date(),
     });
 
-    // Test attempt count oshirish
     await this.testRepo.increment({ id: input.testId }, 'totalAttempts', 1);
 
-    return this.resultRepo.save(result);
+    const saved = await this.resultRepo.save(result);
+
+    return saved;
   }
 
   async getMyResults(userId: string): Promise<any[]> {
