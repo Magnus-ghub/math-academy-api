@@ -112,12 +112,10 @@ enum ContentStatus {
 }
 
 enum ContentType {
-  BANNER
   BOOK
   EVENT
   FAQ
   LESSON
-  NEWS
   SUCCESS_STORY
   TEACHER
 }
@@ -298,6 +296,7 @@ type Query {
   getTeachers: [Content!]!
   getTest(testId: String!): Test!
   getTestComments(testId: String!): [Comment!]!
+  getTests: [Test!]!
   hello: String!
   searchUsers(search: String!): [User!]!
 }

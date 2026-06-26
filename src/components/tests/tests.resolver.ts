@@ -23,6 +23,13 @@ export class TestsResolver {
     return this.testsService.getPublicTests();
   }
 
+  // Barcha published testlar — login qilgan foydalanuvchilar uchun
+  @UseGuards(JwtAuthGuard)
+  @Query(() => [Test])
+  async getTests() {
+    return this.testsService.getPublicTests();
+  }
+
   // Guruh testlari
   @UseGuards(JwtAuthGuard)
   @Query(() => [Test])

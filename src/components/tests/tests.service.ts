@@ -64,10 +64,10 @@ export class TestsService {
     throw new ForbiddenException('Kirish taqiqlangan');
   }
 
-  // Public testlar
+  // Barcha published testlar (PUBLIC + PREMIUM) — kirish huquqi test boshlananda tekshiriladi
   async getPublicTests(): Promise<TestEntity[]> {
     return this.testRepo.find({
-      where: { testAccess: TestAccess.PUBLIC, testStatus: TestStatus.PUBLISHED },
+      where: { testStatus: TestStatus.PUBLISHED },
       order: { createdAt: 'DESC' },
     });
   }
