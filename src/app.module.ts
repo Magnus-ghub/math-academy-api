@@ -63,7 +63,7 @@ import { UploadModule } from './components/upload/upload.module';
           CommentEntity,
           ReportEntity,
         ],
-        synchronize: config.get('NODE_ENV') !== 'production',
+        synchronize: config.get('NODE_ENV') !== 'production' || config.get('DB_SYNC') === 'true',
         logging:     false,
       }),
       inject: [ConfigService],
