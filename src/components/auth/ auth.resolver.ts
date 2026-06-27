@@ -1,5 +1,8 @@
 import { Resolver, Mutation, Args, Int } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from 'src/libs/dto/users/user';
 import { UserGroup } from 'src/libs/dto/group/group';
 import { ObjectType, Field } from '@nestjs/graphql';
@@ -14,21 +17,9 @@ export class AuthResponse {
 
   @Field(() => [UserGroup])
   groups: UserGroup[];
-}
-
-@ObjectType()
-export class TelegramAuthInput {
-  @Field()
-  telegramId: string;
 
   @Field({ nullable: true })
-  userName?: string;
-
-  @Field({ nullable: true })
-  userLastName?: string;
-
-  @Field({ nullable: true })
-  userImage?: string;
+  isNewUser?: boolean;
 }
 
 @Resolver()
@@ -61,11 +52,45 @@ export class AuthResolver {
     @Args('email') email: string,
     @Args('avatar', { nullable: true }) avatar?: string,
   ) {
-    return this.authService.googleLogin({
-      googleId,
-      name,
-      email,
-      avatar,
-    });
+    return this.authService.googleLogin({ googleId, name, email, avatar });
+  }
+
+  @Mutation(() => AuthResponse)
+  async loginWithEmail(
+    @Args('email') email: string,
+    @Args('password') password: string,
+  ) {
+    return this.authService.loginWithEmail(email, password);
+  }
+
+  @Mutation(() => Boolean)
+  async setGooglePassword(
+    @Args('userId') userId: string,
+    @Args('password') password: string,
+  ) {
+    return this.authService.setGooglePassword(userId, password);
+  }
+
+  @Mutation(() => Boolean)
+  async requestPasswordReset(@Args('email') email: string) {
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Mutation(() => Boolean)
+  async resetPassword(
+    @Args('token') token: string,
+    @Args('newPassword') newPassword: string,
+  ) {
+    return this.authService.resetPassword(token, newPassword);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => Boolean)
+  async changePassword(
+    @CurrentUser() currentUser: any,
+    @Args('newPassword') newPassword: string,
+    @Args('currentPassword', { nullable: true }) currentPassword?: string,
+  ) {
+    return this.authService.changePassword(currentUser.userId, currentPassword, newPassword);
   }
 }

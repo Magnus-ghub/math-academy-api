@@ -39,6 +39,18 @@ export class UserEntity {
   @Column({ nullable: true })
   userDesc: string;
 
+  @Column({ unique: true, nullable: true })
+  userEmail: string;
+
+  @Column({ nullable: true })
+  userPassword: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  resetPasswordToken: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires: Date | null;
+
   @Column({ type: 'timestamp', nullable: true })
   premiumExpiresAt: Date | null;
 

@@ -17,11 +17,18 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: any, @Res() res: any) {
-    const { accessToken, user } = await this.authService.googleLogin(req.user);
+    const { accessToken, user, isNewUser } = await this.authService.googleLogin(req.user);
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
 
-    res.redirect(
-      `${frontendUrl}/google/callback?token=${accessToken}&userId=${user.id}&userName=${user.userName}&userRole=${user.userRole}`,
-    );
+    const params = new URLSearchParams({
+      token: accessToken,
+      userId: user.id,
+      userName: user.userName ?? '',
+      userRole: user.userRole,
+      email: user.userEmail ?? '',
+      isNewUser: isNewUser ? 'true' : 'false',
+    });
+
+    res.redirect(`${frontendUrl}/google/callback?${params.toString()}`);
   }
 }

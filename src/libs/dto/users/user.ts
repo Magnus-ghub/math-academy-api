@@ -34,6 +34,12 @@ export class User {
   userDesc?: string;
 
   @Field({ nullable: true })
+  userEmail?: string;
+
+  @Field({ nullable: true })
+  hasPassword?: boolean;
+
+  @Field({ nullable: true })
   telegramId?: string;
 
   @Field({ nullable: true })

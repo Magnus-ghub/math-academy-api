@@ -17,10 +17,10 @@ export class UsersService {
     private userGroupRepo: Repository<UserGroupEntity>,
   ) {}
 
-  async getMe(userId: string): Promise<UserEntity> {
+  async getMe(userId: string): Promise<UserEntity & { hasPassword: boolean }> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return Object.assign(user, { hasPassword: !!user.userPassword });
   }
 
   async updateUser(userId: string, input: UserUpdate): Promise<UserEntity> {

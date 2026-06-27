@@ -46,6 +46,7 @@ type AttestationSection {
 type AuthResponse {
   accessToken: String!
   groups: [UserGroup!]!
+  isNewUser: Boolean
   user: User!
 }
 
@@ -203,6 +204,7 @@ type Mutation {
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
   adminUpdateUser(input: AdminUserUpdate!, userId: String!): User!
   approveComment(commentId: String!): Comment!
+  changePassword(currentPassword: String, newPassword: String!): Boolean!
   changeRole(userId: String!, userRole: UserRole!): User!
   confirmManualPayment(paymentId: String!): Payment!
   createComment(input: CommentInput!): Comment!
@@ -215,10 +217,14 @@ type Mutation {
   deleteQuestion(questionId: String!): Boolean!
   deleteTest(testId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
+  loginWithEmail(email: String!, password: String!): AuthResponse!
   rejectComment(commentId: String!): Comment!
   rejectReport(reportId: String!): Report!
   removeUserFromGroup(groupId: String!, userId: String!): Boolean!
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(newPassword: String!, token: String!): Boolean!
   resolveReport(reportId: String!): Report!
+  setGooglePassword(password: String!, userId: String!): Boolean!
   submitTest(input: ResultInput!): Result!
   telegramLogin(authDate: Int!, hash: String!, telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateContent(contentId: String!, input: ContentUpdate!): Content!
@@ -496,6 +502,7 @@ input TestUpdate {
 type User {
   createdAt: DateTime!
   googleId: String
+  hasPassword: Boolean
   id: ID!
   premiumExpiresAt: DateTime
   telegramId: String
@@ -503,6 +510,7 @@ type User {
   userAddress: String
   userAuthType: UserAuthType!
   userDesc: String
+  userEmail: String
   userImage: String
   userLastName: String
   userName: String
@@ -512,6 +520,7 @@ type User {
 }
 
 enum UserAuthType {
+  EMAIL
   GOOGLE
   PHONE
   TELEGRAM
