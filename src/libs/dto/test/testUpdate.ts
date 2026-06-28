@@ -39,6 +39,21 @@ export class TestUpdate {
   @IsString()
   testImage?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  testPdfUrl?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  testYoutubeUrl?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  testAnalysis?: string;
+
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()

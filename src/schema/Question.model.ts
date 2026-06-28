@@ -30,6 +30,12 @@ export class QuestionEntity {
   @Column({ nullable: true, type: 'text' })
   explanation: string;
 
+  @Column({ nullable: true })
+  youtubeUrl: string;
+
+  @Column({ nullable: true, type: 'text' })
+  analysis: string;
+
   @Column()
   orderIndex: number;
 

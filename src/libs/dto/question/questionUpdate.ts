@@ -33,5 +33,15 @@ export class QuestionUpdate {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  youtubeUrl?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  analysis?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   section?: string;
 }

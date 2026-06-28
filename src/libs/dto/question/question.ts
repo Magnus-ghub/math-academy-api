@@ -28,7 +28,13 @@ export class Question {
   correctAnswer: number; // 0, 1, 2, 3 (index)
 
   @Field({ nullable: true })
-  explanation?: string; // javob izohi (teacher yozadi)
+  explanation?: string;
+
+  @Field({ nullable: true })
+  youtubeUrl?: string;
+
+  @Field({ nullable: true })
+  analysis?: string;
 
   @Field(() => Int)
   orderIndex: number; // testdagi tartib raqami

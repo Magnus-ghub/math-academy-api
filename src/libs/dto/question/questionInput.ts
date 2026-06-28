@@ -36,14 +36,23 @@ export class QuestionInput {
 
   @Field(() => Int)
   @IsInt()
-  @Min(0)
-  @Max(3)
+  @Min(-1)
   correctAnswer: number;
 
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
   explanation?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  youtubeUrl?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  analysis?: string;
 
   @Field({ nullable: true })
   @IsOptional()

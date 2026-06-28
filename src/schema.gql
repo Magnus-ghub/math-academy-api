@@ -199,6 +199,17 @@ input GroupUpdate {
   groupStatus: GroupStatus
 }
 
+type LeaderboardEntry {
+  correctAnswers: Int!
+  duration: Int!
+  rank: Int!
+  score: Float!
+  totalQuestions: Int!
+  userId: String!
+  userImage: String
+  userName: String!
+}
+
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
@@ -286,7 +297,7 @@ type Query {
   getGroupMemberIds(groupId: String!): [String!]!
   getGroupMembers(groupId: String!): [GroupMember!]!
   getGroupTests(groupId: String!): [Test!]!
-  getLeaderboard(testId: String!): [Result!]!
+  getLeaderboard(testId: String!): [LeaderboardEntry!]!
   getMe: User!
   getMyGroups: [UserGroup!]!
   getMyPayments: [Payment!]!
@@ -308,6 +319,7 @@ type Query {
 }
 
 type Question {
+  analysis: String
   correctAnswer: Int!
   createdAt: DateTime!
   explanation: String
@@ -319,9 +331,11 @@ type Question {
   questionType: QuestionType!
   section: String
   testId: String!
+  youtubeUrl: String
 }
 
 input QuestionInput {
+  analysis: String
   correctAnswer: Int!
   explanation: String
   options: [String!]!
@@ -331,6 +345,7 @@ input QuestionInput {
   questionType: QuestionType
   section: String
   testId: String!
+  youtubeUrl: String
 }
 
 enum QuestionType {
@@ -339,12 +354,14 @@ enum QuestionType {
 }
 
 input QuestionUpdate {
+  analysis: String
   correctAnswer: Int
   explanation: String
   options: [String!]
   questionImage: String
   questionText: String
   section: String
+  youtubeUrl: String
 }
 
 type Report {
@@ -428,14 +445,17 @@ type Test {
   groupId: String
   id: ID!
   testAccess: TestAccess!
+  testAnalysis: String
   testBlock: TestBlock
   testDesc: String
   testDifficulty: TestDifficulty!
   testImage: String
+  testPdfUrl: String
   testPrice: Int
   testStatus: TestStatus!
   testTitle: String!
   testType: TestType!
+  testYoutubeUrl: String
   totalAttempts: Int!
   totalQuestions: Int!
   updatedAt: DateTime!
@@ -489,14 +509,17 @@ input TestUpdate {
   dtmType: DTMType
   duration: Int
   testAccess: TestAccess
+  testAnalysis: String
   testBlock: TestBlock
   testDesc: String
   testDifficulty: TestDifficulty
   testImage: String
+  testPdfUrl: String
   testPrice: Int
   testStatus: TestStatus
   testTitle: String
   testType: TestType
+  testYoutubeUrl: String
 }
 
 type User {

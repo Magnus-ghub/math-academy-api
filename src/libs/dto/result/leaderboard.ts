@@ -1,6 +1,4 @@
-import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
-import { LeaderboardType } from 'src/libs/enums/result.enum';
-
+import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
 
 @ObjectType()
 export class LeaderboardEntry {
@@ -17,26 +15,14 @@ export class LeaderboardEntry {
   userImage?: string;
 
   @Field(() => Float)
-  score: number;         
+  score: number;
 
   @Field(() => Int)
-  totalTests: number;   
+  correctAnswers: number;
 
   @Field(() => Int)
-  duration: number;      
-}
+  totalQuestions: number;
 
-@ObjectType()
-export class Leaderboard {
-  @Field(() => LeaderboardType)
-  leaderboardType: LeaderboardType;
-
-  @Field({ nullable: true })
-  testId?: string;       
-
-  @Field(() => [LeaderboardEntry])
-  top: LeaderboardEntry[];
-
-  @Field({ nullable: true })
-  myRank?: LeaderboardEntry;  
+  @Field(() => Int)
+  duration: number;
 }

@@ -28,6 +28,35 @@ export class UploadController {
     private testRepo: Repository<TestEntity>,
   ) {}
 
+  @Post('pdf')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'uploads'),
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, uniqueSuffix + '.pdf');
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          return cb(new BadRequestException('Faqat PDF fayl qabul qilinadi'), false);
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
+  async uploadPdf(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Fayl yuklanmadi');
+    return {
+      url: `/uploads/${file.filename}`,
+      filename: file.filename,
+      size: file.size,
+    };
+  }
+
   @Post('image')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -128,6 +157,8 @@ export class UploadController {
       duration?: number;
       groupId?: string;
       testDesc?: string;
+      testYoutubeUrl?: string;
+      testAnalysis?: string;
       createdBy?: string;
       questions: {
         questionText: string;
@@ -135,6 +166,8 @@ export class UploadController {
         options: string[];
         correctAnswer: number;
         explanation?: string;
+        youtubeUrl?: string;
+        analysis?: string;
       }[];
     },
   ) {
@@ -168,7 +201,8 @@ export class UploadController {
     let savedCount = 0;
     for (let i = 0; i < body.questions.length; i++) {
       const q = body.questions[i];
-      if (!q.questionText || !Array.isArray(q.options) || q.options.length !== 4) continue;
+      const isSpr = Array.isArray(q.options) && q.options.length === 0;
+      if (!q.questionText || !Array.isArray(q.options) || (!isSpr && q.options.length !== 4)) continue;
 
       let imageUrl: string | undefined;
 
@@ -195,13 +229,18 @@ export class UploadController {
         options: q.options,
         correctAnswer: q.correctAnswer ?? 0,
         explanation: q.explanation || undefined,
+        youtubeUrl: q.youtubeUrl || undefined,
+        analysis: q.analysis || undefined,
         orderIndex: i + 1,
       });
       await this.questionRepo.save(question);
       savedCount++;
     }
 
-    await this.testRepo.update(testId, { totalQuestions: savedCount });
+    const testUpdate: Record<string, any> = { totalQuestions: savedCount };
+    if (body.testYoutubeUrl) testUpdate.testYoutubeUrl = body.testYoutubeUrl;
+    if (body.testAnalysis) testUpdate.testAnalysis = body.testAnalysis;
+    await this.testRepo.update(testId, testUpdate);
 
     return {
       success: true,

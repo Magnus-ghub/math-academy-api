@@ -33,6 +33,15 @@ export class Test {
   @Field({ nullable: true })
   testImage?: string;
 
+  @Field({ nullable: true })
+  testPdfUrl?: string;
+
+  @Field({ nullable: true })
+  testYoutubeUrl?: string;
+
+  @Field({ nullable: true })
+  testAnalysis?: string;
+
   @Field(() => Int)
   totalQuestions: number;
 

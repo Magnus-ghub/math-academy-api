@@ -4,9 +4,11 @@ import { In, Repository } from 'typeorm';
 import { ResultEntity } from '../../schema/Result.model';
 import { TestEntity } from '../../schema/Test.model';
 import { QuestionEntity } from '../../schema/Question.model';
+import { UserEntity } from '../../schema/User.model';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { ResultStatus } from '../../libs/enums/result.enum';
 import { TestType } from '../../libs/enums/test.enum';
+import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 
 @Injectable()
 export class ResultsService {
@@ -19,6 +21,9 @@ export class ResultsService {
 
     @InjectRepository(QuestionEntity)
     private questionRepo: Repository<QuestionEntity>,
+
+    @InjectRepository(UserEntity)
+    private userRepo: Repository<UserEntity>,
   ) {}
 
   async submitTest(userId: string, input: ResultInput): Promise<ResultEntity> {
@@ -139,11 +144,33 @@ export class ResultsService {
     return null;
   }
 
-  async getLeaderboard(testId: string): Promise<ResultEntity[]> {
-    return this.resultRepo.find({
+  async getLeaderboard(testId: string): Promise<LeaderboardEntry[]> {
+    const results = await this.resultRepo.find({
       where: { testId, resultStatus: ResultStatus.COMPLETED },
       order: { score: 'DESC', duration: 'ASC' },
       take: 10,
+    });
+
+    if (results.length === 0) return [];
+
+    const userIds = [...new Set(results.map((r) => r.userId))];
+    const users = await this.userRepo.findBy({ id: In(userIds) });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return results.map((r, i) => {
+      const user = userMap.get(r.userId);
+      const parts = [user?.userName, user?.userLastName].filter(Boolean);
+      const userName = parts.length > 0 ? parts.join(' ') : 'Foydalanuvchi';
+      return {
+        rank: i + 1,
+        userId: r.userId,
+        userName,
+        userImage: user?.userImage ?? undefined,
+        score: r.score,
+        correctAnswers: r.correctAnswers,
+        totalQuestions: r.totalQuestions,
+        duration: r.duration,
+      };
     });
   }
 

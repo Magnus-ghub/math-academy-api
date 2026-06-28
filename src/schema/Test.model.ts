@@ -33,6 +33,15 @@ export class TestEntity {
   @Column({ nullable: true })
   testImage: string;
 
+  @Column({ nullable: true })
+  testPdfUrl: string;
+
+  @Column({ nullable: true })
+  testYoutubeUrl: string;
+
+  @Column({ nullable: true, type: 'text' })
+  testAnalysis: string;
+
   @Column()
   duration: number;
 
