@@ -45,6 +45,7 @@ export class AuthService {
     userName?: string;
     userLastName?: string;
     userImage?: string;
+    telegramUsername?: string;
     hash: string;
     authDate: number;
   }): boolean {
@@ -60,6 +61,7 @@ export class AuthService {
       id: rest.telegramId,
       last_name: rest.userLastName,
       photo_url: rest.userImage,
+      username: rest.telegramUsername,
     })
       .filter(([_, v]) => v !== undefined)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -157,6 +159,7 @@ export class AuthService {
     userName?: string;
     userLastName?: string;
     userImage?: string;
+    telegramUsername?: string;
     hash: string;
     authDate: number;
   }) {
@@ -179,6 +182,23 @@ export class AuthService {
         userStatus: UserStatus.ACTIVE,
       });
       await this.userRepo.save(user);
+    } else {
+      // Ism/familiya faqat bo'sh bo'lsa yangilanadi (user o'zi tahrirlagan bo'lishi mumkin)
+      // Rasm esa har doim Telegramdan yangilanadi (agar user o'zi yuklamagan bo'lsa)
+      let changed = false;
+      if (!user.userName && telegramData.userName) {
+        user.userName = telegramData.userName;
+        changed = true;
+      }
+      if (!user.userLastName && telegramData.userLastName) {
+        user.userLastName = telegramData.userLastName;
+        changed = true;
+      }
+      if (telegramData.userImage && !user.userImage) {
+        user.userImage = telegramData.userImage;
+        changed = true;
+      }
+      if (changed) await this.userRepo.save(user);
     }
 
     const memberGroups = await this.checkTelegramGroups(telegramData.telegramId);

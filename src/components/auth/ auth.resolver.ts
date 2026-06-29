@@ -34,12 +34,14 @@ export class AuthResolver {
     @Args('userName', { nullable: true }) userName?: string,
     @Args('userLastName', { nullable: true }) userLastName?: string,
     @Args('userImage', { nullable: true }) userImage?: string,
+    @Args('telegramUsername', { nullable: true }) telegramUsername?: string,
   ) {
     return this.authService.telegramLogin({
       telegramId,
       userName,
       userLastName,
       userImage,
+      telegramUsername,
       hash,
       authDate,
     });
