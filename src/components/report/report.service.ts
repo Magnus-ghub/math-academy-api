@@ -1,11 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { PubSub } from 'graphql-subscriptions';
 import { ReportEntity } from '../../schema/Report.model';
 import { ReportStatus } from '../../libs/enums/report.enum';
 import { ReportInput } from 'src/libs/dto/report/reportInput';
 import { TestEntity } from '../../schema/Test.model';
 import { QuestionEntity } from '../../schema/Question.model';
+
+export const REPORT_CREATED = 'REPORT_CREATED';
 
 @Injectable()
 export class ReportService {
@@ -16,11 +19,14 @@ export class ReportService {
     private testRepo: Repository<TestEntity>,
     @InjectRepository(QuestionEntity)
     private questionRepo: Repository<QuestionEntity>,
+    @Inject('PUB_SUB') private pubSub: PubSub,
   ) {}
 
   async createReport(userId: string, input: ReportInput): Promise<ReportEntity> {
     const report = this.reportRepo.create({ ...input, userId });
-    return this.reportRepo.save(report);
+    const saved = await this.reportRepo.save(report);
+    await this.pubSub.publish(REPORT_CREATED, { reportCreated: saved });
+    return saved;
   }
 
   async getPendingReports(): Promise<any[]> {

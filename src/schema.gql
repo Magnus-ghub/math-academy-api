@@ -283,6 +283,7 @@ enum PaymentType {
 }
 
 type Query {
+  checkMyAttempt(testId: String!): Result
   getAllContent: [Content!]!
   getAllGroups: [Group!]!
   getAllPayments: [Payment!]!
@@ -435,6 +436,10 @@ enum ResultStatus {
   COMPLETED
   IN_PROGRESS
   TIME_UP
+}
+
+type Subscription {
+  reportCreated: Report!
 }
 
 type Test {

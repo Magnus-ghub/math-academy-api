@@ -21,6 +21,15 @@ export class ResultsResolver {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Query(() => Result, { nullable: true })
+  async checkMyAttempt(
+    @CurrentUser() user: any,
+    @Args('testId') testId: string,
+  ) {
+    return this.resultsService.checkMyAttempt(user.userId, testId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Query(() => [Result])
   async getMyResults(@CurrentUser() user: any) {
     return this.resultsService.getMyResults(user.userId);

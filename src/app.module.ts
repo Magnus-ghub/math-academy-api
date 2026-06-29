@@ -40,6 +40,9 @@ import { UploadModule } from './components/upload/upload.module';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
       playground: process.env.NODE_ENV !== 'production',
+      subscriptions: {
+        'graphql-ws': true,
+      },
     }),
 
     TypeOrmModule.forRootAsync({

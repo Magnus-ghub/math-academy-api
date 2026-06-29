@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ResultEntity } from '../../schema/Result.model';
@@ -29,6 +29,11 @@ export class ResultsService {
   async submitTest(userId: string, input: ResultInput): Promise<ResultEntity> {
     const test = await this.testRepo.findOne({ where: { id: input.testId } });
     if (!test) throw new NotFoundException('Test not found');
+
+    const existing = await this.resultRepo.findOne({
+      where: { userId, testId: input.testId, resultStatus: ResultStatus.COMPLETED },
+    });
+    if (existing) throw new ConflictException('Bu testni allaqachon topshirgansiz');
 
     const questions = await this.questionRepo.find({
       where: { testId: input.testId },
@@ -68,6 +73,12 @@ export class ResultsService {
     const saved = await this.resultRepo.save(result);
 
     return saved;
+  }
+
+  async checkMyAttempt(userId: string, testId: string): Promise<ResultEntity | null> {
+    return this.resultRepo.findOne({
+      where: { userId, testId, resultStatus: ResultStatus.COMPLETED },
+    });
   }
 
   async getMyResults(userId: string): Promise<any[]> {
