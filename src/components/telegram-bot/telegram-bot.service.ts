@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Telegraf, Markup, Scenes, session } from 'telegraf';
 import { AuthService } from '../auth/auth.service';
+import { QrLoginService } from '../auth/qr-login.service';
 import { UserEntity, UserDocument } from 'src/schema/User.model';
 import { TeacherCategory } from 'src/libs/enums/user.enum';
 import { TestType } from 'src/libs/enums/test.enum';
@@ -37,6 +38,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private configService: ConfigService,
     private authService: AuthService,
+    private qrLoginService: QrLoginService,
     @InjectModel(UserEntity.name) private userModel: Model<UserDocument>,
   ) {
     this.bot = new Telegraf<BotContext>(configService.get<string>('TELEGRAM_BOT_TOKEN')!);
@@ -75,6 +77,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           );
         }
         return ctx.scene.enter('register-wizard');
+      }
+
+      if (payload?.startsWith('qr_')) {
+        return this.handleQrLogin(ctx, payload.slice(3));
       }
 
       return ctx.reply(
@@ -208,6 +214,31 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private async replySuccess(ctx: BotContext, token: string) {
     await this.sendLoginLink(ctx, "✅ Ro'yxatdan o'tish yakunlandi!", token);
     return ctx.scene.leave();
+  }
+
+  private async handleQrLogin(ctx: BotContext, sessionId: string) {
+    const result = await this.qrLoginService.confirmSession(sessionId, String(ctx.from!.id));
+
+    if (result === 'NOT_FOUND') {
+      return ctx.reply("⚠️ QR kod muddati tugagan. Sahifani yangilab, qaytadan urinib ko'ring.");
+    }
+
+    if (result === 'NOT_REGISTERED') {
+      const botUsername = ctx.botInfo?.username;
+      return ctx.reply(
+        "Siz hali ro'yxatdan o'tmagansiz.\n\nAvval ro'yxatdan o'ting, so'ng QR kodni qayta skanerlang:",
+        botUsername
+          ? Markup.inlineKeyboard([
+              Markup.button.url(
+                "📝 Ro'yxatdan o'tish",
+                `https://t.me/${botUsername}?start=register`,
+              ),
+            ])
+          : undefined,
+      );
+    }
+
+    return ctx.reply('✅ Tasdiqlandi! Kompyuteringizga qaytib, avtomatik kirasiz.');
   }
 
   private async handleLoginRequest(ctx: BotContext) {

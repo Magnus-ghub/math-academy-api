@@ -1,5 +1,5 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsString, IsEnum, IsInt, IsOptional, Min, IsPositive } from 'class-validator';
+import { IsString, IsEnum, IsInt, IsOptional, Min, IsPositive, MaxLength } from 'class-validator';
 import { TestType, TestAccess, TestBlock, DTMType, TestDifficulty } from 'src/libs/enums/test.enum';
 
 @InputType()
@@ -34,6 +34,7 @@ export class TestInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  @MaxLength(300)
   testDesc?: string;
 
   @Field({ nullable: true })

@@ -213,6 +213,7 @@ type LeaderboardEntry {
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
+  adminGenerateLoginLink(userId: String!): String!
   adminUpdateUser(input: AdminUserUpdate!, userId: String!): User!
   approveComment(commentId: String!): Comment!
   changePassword(currentPassword: String, newPassword: String!): Boolean!
@@ -222,6 +223,7 @@ type Mutation {
   createContent(input: ContentInput!): Content!
   createGroup(input: GroupInput!): Group!
   createPayment(input: PaymentInput!): Payment!
+  createQrSession: String!
   createReport(input: ReportInput!): Report!
   createTest(input: TestInput!): Test!
   deleteContent(contentId: String!): Boolean!
@@ -234,8 +236,10 @@ type Mutation {
   removeUserFromGroup(groupId: String!, userId: String!): Boolean!
   requestPasswordReset(email: String!): Boolean!
   resetPassword(newPassword: String!, token: String!): Boolean!
+  resolveRecoveryRequest(id: String!): RecoveryRequest!
   resolveReport(reportId: String!): Report!
   setGooglePassword(password: String!, userId: String!): Boolean!
+  submitRecoveryRequest(input: RecoveryRequestInput!): Boolean!
   submitTest(input: ResultInput!): Result!
   telegramBotLogin(token: String!): AuthResponse!
   telegramLogin(authDate: Int!, hash: String!, telegramId: String!, telegramUsername: String, userImage: String, userLastName: String, userName: String): AuthResponse!
@@ -283,8 +287,14 @@ enum PaymentType {
   PREMIUM
 }
 
+type QrSessionStatus {
+  session: AuthResponse
+  status: String!
+}
+
 type Query {
   checkMyAttempt(testId: String!): Result
+  checkQrSession(sessionId: String!): QrSessionStatus!
   getAllContent: [Content!]!
   getAllGroups: [Group!]!
   getAllPayments: [Payment!]!
@@ -310,6 +320,7 @@ type Query {
   getPublicComments: [Comment!]!
   getPublicTests: [Test!]!
   getQuestions(testId: String!): [Question!]!
+  getRecoveryRequests: [RecoveryRequest!]!
   getResult(resultId: String!): Result!
   getSuccessStories: [Content!]!
   getTeachers: [Content!]!
@@ -364,6 +375,28 @@ input QuestionUpdate {
   questionText: String
   section: String
   youtubeUrl: String
+}
+
+type RecoveryRequest {
+  createdAt: DateTime!
+  fullName: String!
+  id: ID!
+  message: String!
+  phone: String!
+  status: RecoveryStatus!
+  telegramUsername: String
+}
+
+input RecoveryRequestInput {
+  fullName: String!
+  message: String!
+  phone: String!
+  telegramUsername: String
+}
+
+enum RecoveryStatus {
+  PENDING
+  RESOLVED
 }
 
 type Report {

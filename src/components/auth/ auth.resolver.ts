@@ -1,8 +1,12 @@
-import { Resolver, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { QrLoginService } from './qr-login.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { Roles } from './decorators/roles.decorator';
+import { UserRole } from 'src/libs/enums/user.enum';
 import { User } from 'src/libs/dto/users/user';
 import { UserGroup } from 'src/libs/dto/group/group';
 import { ObjectType, Field } from '@nestjs/graphql';
@@ -22,9 +26,40 @@ export class AuthResponse {
   isNewUser?: boolean;
 }
 
+@ObjectType()
+export class QrSessionStatus {
+  @Field()
+  status: string;
+
+  @Field(() => AuthResponse, { nullable: true })
+  session?: AuthResponse;
+}
+
 @Resolver()
 export class AuthResolver {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private qrLoginService: QrLoginService,
+  ) {}
+
+  @Mutation(() => String)
+  async createQrSession() {
+    return this.qrLoginService.createSession();
+  }
+
+  @Query(() => QrSessionStatus)
+  async checkQrSession(@Args('sessionId') sessionId: string): Promise<QrSessionStatus> {
+    const session = this.qrLoginService.getSession(sessionId);
+    if (!session) return { status: 'NOT_FOUND' };
+    return { status: session.status, session: session.result };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => String)
+  async adminGenerateLoginLink(@Args('userId') userId: string) {
+    return this.authService.adminGenerateLoginLink(userId);
+  }
 
   @Mutation(() => AuthResponse)
   async telegramLogin(

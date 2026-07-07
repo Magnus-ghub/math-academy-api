@@ -261,12 +261,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token');
     }
 
-    const user = await this.userModel.findOne({ telegramId: payload.telegramId });
+    return this.loginTelegramUser(payload.telegramId);
+  }
+
+  // Telegram ID orqali to'liq sessiya yaratish — telegramBotLogin va QR-login
+  // (qr-login.service.ts) ikkalasi ham shu metoddan foydalanadi.
+  async loginTelegramUser(telegramId: string) {
+    const user = await this.userModel.findOne({ telegramId });
     if (!user) {
       throw new UnauthorizedException('Foydalanuvchi topilmadi');
     }
 
-    const memberGroups = await this.checkTelegramGroups(payload.telegramId);
+    const memberGroups = await this.checkTelegramGroups(telegramId);
     const userGroups = await this.syncUserGroups(user, memberGroups);
 
     return {
@@ -275,6 +281,19 @@ export class AuthService {
       groups: userGroups,
       isNewUser: false,
     };
+  }
+
+  // Admin tomonidan hisobni tiklash uchun qo'lda login havolasi yaratish
+  async adminGenerateLoginLink(userId: string): Promise<string> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+    if (!user.telegramId) {
+      throw new BadRequestException('Bu foydalanuvchida Telegram ID yo\'q');
+    }
+
+    const token = this.generateBotSignupToken(user.telegramId);
+    const frontendUrl = this.config.get<string>('FRONTEND_URL');
+    return `${frontendUrl}/telegram?token=${token}`;
   }
 
   // Google login/register — email saqlaydi, yangi foydalanuvchi bo'lsa isNewUser=true
