@@ -22,3 +22,11 @@ export enum UserAuthType {
   EMAIL = 'EMAIL',
 }
 registerEnumType(UserAuthType, { name: 'UserAuthType' });
+
+export enum TeacherCategory {
+  MUTAXASSIS = 'MUTAXASSIS',
+  IKKINCHI_TOIFA = 'IKKINCHI_TOIFA',
+  BIRINCHI_TOIFA = 'BIRINCHI_TOIFA',
+  OLIY_TOIFA = 'OLIY_TOIFA',
+}
+registerEnumType(TeacherCategory, { name: 'TeacherCategory' });

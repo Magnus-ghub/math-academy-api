@@ -9,8 +9,9 @@ import { ConfigService } from '@nestjs/config';
 import { UserEntity, UserDocument } from 'src/schema/User.model';
 import { GroupEntity, GroupDocument } from 'src/schema/Group.model';
 import { UserGroupEntity, UserGroupDocument } from 'src/schema/User_Group.model';
-import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import { TeacherCategory, UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
 import { GroupStatus } from 'src/libs/enums/group.enum';
+import { TestType } from 'src/libs/enums/test.enum';
 
 @Injectable()
 export class AuthService {
@@ -197,6 +198,75 @@ export class AuthService {
     }
 
     const memberGroups = await this.checkTelegramGroups(telegramData.telegramId);
+    const userGroups = await this.syncUserGroups(user, memberGroups);
+
+    return {
+      accessToken: this.generateToken(user, userGroups),
+      user,
+      groups: userGroups,
+      isNewUser: false,
+    };
+  }
+
+  // Telegram bot orqali ro'yxatdan o'tish/kirish uchun qisqa muddatli token
+  generateBotSignupToken(telegramId: string): string {
+    return this.jwtService.sign(
+      { telegramId, purpose: 'bot-login' },
+      { expiresIn: '5m' },
+    );
+  }
+
+  // Bot ichidagi forma to'ldirilgach yoki /login buyrug'ida chaqiriladi
+  async registerViaTelegramBot(data: {
+    telegramId: string;
+    userName: string;
+    userLastName: string;
+    examPrepType: TestType;
+    teacherCategory?: TeacherCategory;
+  }): Promise<string> {
+    let user = await this.userModel.findOne({ telegramId: data.telegramId });
+
+    if (!user) {
+      user = await this.userModel.create({
+        telegramId: data.telegramId,
+        userName: data.userName,
+        userLastName: data.userLastName,
+        userAuthType: UserAuthType.TELEGRAM,
+        userRole: UserRole.STUDENT,
+        userStatus: UserStatus.ACTIVE,
+        examPrepType: data.examPrepType,
+        teacherCategory: data.teacherCategory ?? null,
+      });
+    } else {
+      user.userName = data.userName;
+      user.userLastName = data.userLastName;
+      user.examPrepType = data.examPrepType;
+      user.teacherCategory = data.teacherCategory ?? null;
+      await user.save();
+    }
+
+    return this.generateBotSignupToken(data.telegramId);
+  }
+
+  // Bot bergan qisqa muddatli tokenni to'liq sessiyaga almashtirish
+  async telegramBotLogin(token: string) {
+    let payload: { telegramId: string; purpose: string };
+    try {
+      payload = this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('Token yaroqsiz yoki muddati o\'tgan');
+    }
+
+    if (payload.purpose !== 'bot-login') {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const user = await this.userModel.findOne({ telegramId: payload.telegramId });
+    if (!user) {
+      throw new UnauthorizedException('Foydalanuvchi topilmadi');
+    }
+
+    const memberGroups = await this.checkTelegramGroups(payload.telegramId);
     const userGroups = await this.syncUserGroups(user, memberGroups);
 
     return {

@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import { TeacherCategory, UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import { TestType } from 'src/libs/enums/test.enum';
 
 export type UserDocument = HydratedDocument<UserEntity>;
 
@@ -53,6 +54,12 @@ export class UserEntity {
 
   @Prop({ type: Date, default: null })
   premiumExpiresAt: Date | null;
+
+  @Prop({ enum: Object.values(TestType), type: String, default: null })
+  examPrepType: TestType | null;
+
+  @Prop({ enum: Object.values(TeacherCategory), type: String, default: null })
+  teacherCategory: TeacherCategory | null;
 
   createdAt: Date;
   updatedAt: Date;

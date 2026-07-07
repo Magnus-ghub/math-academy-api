@@ -237,6 +237,7 @@ type Mutation {
   resolveReport(reportId: String!): Report!
   setGooglePassword(password: String!, userId: String!): Boolean!
   submitTest(input: ResultInput!): Result!
+  telegramBotLogin(token: String!): AuthResponse!
   telegramLogin(authDate: Int!, hash: String!, telegramId: String!, telegramUsername: String, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateContent(contentId: String!, input: ContentUpdate!): Content!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
@@ -442,6 +443,13 @@ type Subscription {
   reportCreated: Report!
 }
 
+enum TeacherCategory {
+  BIRINCHI_TOIFA
+  IKKINCHI_TOIFA
+  MUTAXASSIS
+  OLIY_TOIFA
+}
+
 type Test {
   createdAt: DateTime!
   createdBy: String!
@@ -529,10 +537,12 @@ input TestUpdate {
 
 type User {
   createdAt: DateTime!
+  examPrepType: TestType
   googleId: String
   hasPassword: Boolean
   id: ID!
   premiumExpiresAt: DateTime
+  teacherCategory: TeacherCategory
   telegramId: String
   updatedAt: DateTime!
   userAddress: String

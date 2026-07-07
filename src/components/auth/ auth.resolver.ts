@@ -48,6 +48,11 @@ export class AuthResolver {
   }
 
   @Mutation(() => AuthResponse)
+  async telegramBotLogin(@Args('token') token: string) {
+    return this.authService.telegramBotLogin(token);
+  }
+
+  @Mutation(() => AuthResponse)
   async googleLogin(
     @Args('googleId') googleId: string,
     @Args('name') name: string,

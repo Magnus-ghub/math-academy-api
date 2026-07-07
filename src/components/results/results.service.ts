@@ -8,6 +8,7 @@ import { UserEntity, UserDocument } from '../../schema/User.model';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { ResultStatus } from '../../libs/enums/result.enum';
 import { TestType } from '../../libs/enums/test.enum';
+import { TeacherCategory } from '../../libs/enums/user.enum';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 
 @Injectable()
@@ -57,7 +58,7 @@ export class ResultsService {
 
     await this.testModel.updateOne({ _id: input.testId }, { $inc: { totalAttempts: 1 } });
 
-    return this.resultModel.create({
+    const result = await this.resultModel.create({
       userId,
       testId: input.testId,
       groupId: test.groupId,
@@ -69,6 +70,15 @@ export class ResultsService {
       resultStatus: ResultStatus.COMPLETED,
       finishedAt: new Date(),
     });
+
+    if (test.testType === TestType.ATTESTATSIYA) {
+      const category = this.getAttestationCategory(correctAnswers * 2);
+      if (category) {
+        await this.userModel.updateOne({ _id: userId }, { teacherCategory: category });
+      }
+    }
+
+    return result;
   }
 
   async checkMyAttempt(userId: string, testId: string): Promise<ResultDocument | null> {
@@ -134,13 +144,27 @@ export class ResultsService {
     return { ...base, attestationData: { totalPoints, grade, sections } };
   }
 
-  private getAttestationGrade(points: number): string | null {
-    if (points > 86) return 'Oliy toifa + 70% ustama';
-    if (points >= 80) return 'Oliy toifa';
-    if (points >= 71) return 'Birinchi toifa';
-    if (points >= 61) return 'Ikkinchi toifa';
-    if (points >= 56) return 'Mutaxassis';
+  // Frontenddagi getAttestatsiyaToifa bilan bir xil bo'sag'alar — result sahifasida
+  // ko'rsatilgan toifa va profilga saqlanadigan toifa mos kelishi uchun.
+  private getAttestationCategory(points: number): TeacherCategory | null {
+    if (points >= 80) return TeacherCategory.OLIY_TOIFA;
+    if (points >= 70) return TeacherCategory.BIRINCHI_TOIFA;
+    if (points >= 60) return TeacherCategory.IKKINCHI_TOIFA;
+    if (points >= 56) return TeacherCategory.MUTAXASSIS;
     return null;
+  }
+
+  private getAttestationGrade(points: number): string | null {
+    const category = this.getAttestationCategory(points);
+    if (!category) return null;
+    if (points >= 86) return 'Oliy toifa + 70% ustama';
+    const labels: Record<TeacherCategory, string> = {
+      [TeacherCategory.MUTAXASSIS]: 'Mutaxassis',
+      [TeacherCategory.IKKINCHI_TOIFA]: 'Ikkinchi toifa',
+      [TeacherCategory.BIRINCHI_TOIFA]: 'Birinchi toifa',
+      [TeacherCategory.OLIY_TOIFA]: 'Oliy toifa',
+    };
+    return labels[category];
   }
 
   async getLeaderboard(testId: string): Promise<LeaderboardEntry[]> {

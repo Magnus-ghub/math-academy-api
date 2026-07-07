@@ -18,6 +18,7 @@ import { ContentModule } from './components/content/content.module';
 import { CommentModule } from './components/comment/comment.module';
 import { ReportModule } from './components/report/report.module';
 import { UploadModule } from './components/upload/upload.module';
+import { TelegramBotModule } from './components/telegram-bot/telegram-bot.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { UploadModule } from './components/upload/upload.module';
     CommentModule,
     ReportModule,
     UploadModule,
+    TelegramBotModule,
   ],
   providers: [AppResolver],
 })

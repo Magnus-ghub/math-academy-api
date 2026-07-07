@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import { TeacherCategory, UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import { TestType } from 'src/libs/enums/test.enum';
 
 @ObjectType()
 export class User {
@@ -47,6 +48,12 @@ export class User {
 
   @Field({ nullable: true })
   premiumExpiresAt?: Date;
+
+  @Field(() => TestType, { nullable: true })
+  examPrepType?: TestType;
+
+  @Field(() => TeacherCategory, { nullable: true })
+  teacherCategory?: TeacherCategory;
 
   @Field()
   createdAt: Date;
