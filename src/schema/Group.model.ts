@@ -1,38 +1,39 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { GroupType, GroupStatus } from '../libs/enums/group.enum';
 
-@Entity('groups')
-export class GroupEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export type GroupDocument = HydratedDocument<GroupEntity>;
 
-  @Column({ type: 'enum', enum: GroupType })
+@Schema({ timestamps: true, collection: 'groups', toObject: { virtuals: true }, toJSON: { virtuals: true } })
+export class GroupEntity {
+  @Prop({ enum: Object.values(GroupType), type: String, required: true })
   groupType: GroupType;
 
-  @Column({ type: 'enum', enum: GroupStatus, default: GroupStatus.ACTIVE })
+  @Prop({ enum: Object.values(GroupStatus), type: String, default: GroupStatus.ACTIVE })
   groupStatus: GroupStatus;
 
-  @Column()
+  @Prop({ type: String, required: true })
   groupName: string;
 
-  @Column({ unique: true })
+  @Prop({ type: String, required: true, unique: true })
   telegramChatId: string;
 
-  @Column()
+  @Prop({ type: Number, required: true })
   durationMonths: number;
 
-  @Column({ nullable: true })
-  groupDesc: string;
+  @Prop({ type: String, default: null })
+  groupDesc: string | null;
 
-  @Column({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   memberCount: number;
 
-  @Column({ nullable: true })
-  endedAt: Date;
+  @Prop({ type: Date, default: null })
+  endedAt: Date | null;
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const GroupSchema = SchemaFactory.createForClass(GroupEntity);
+
+GroupSchema.index({ groupStatus: 1, createdAt: -1 });

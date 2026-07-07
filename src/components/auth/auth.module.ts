@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { AuthService } from './auth.service';
 import { AuthResolver } from './ auth.resolver';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { UserEntity } from 'src/schema/User.model';
-import { GroupEntity } from 'src/schema/Group.model';
-import { UserGroupEntity } from 'src/schema/User_Group.model';
+import { UserEntity, UserSchema } from 'src/schema/User.model';
+import { GroupEntity, GroupSchema } from 'src/schema/Group.model';
+import { UserGroupEntity, UserGroupSchema } from 'src/schema/User_Group.model';
 import { AuthController } from './auth.controller';
 
 
@@ -18,7 +18,11 @@ import { AuthController } from './auth.controller';
   controllers: [AuthController],
   imports: [
     PassportModule,
-    TypeOrmModule.forFeature([UserEntity, GroupEntity, UserGroupEntity]),
+    MongooseModule.forFeature([
+      { name: UserEntity.name, schema: UserSchema },
+      { name: GroupEntity.name, schema: GroupSchema },
+      { name: UserGroupEntity.name, schema: UserGroupSchema },
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({

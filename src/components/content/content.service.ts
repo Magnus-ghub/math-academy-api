@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { ContentEntity } from '../../schema/Content.model';
-import { GroupEntity } from '../../schema/Group.model';
-import { UserGroupEntity } from '../../schema/User_Group.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { ContentEntity, ContentDocument } from '../../schema/Content.model';
+import { GroupEntity, GroupDocument } from '../../schema/Group.model';
+import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.model';
 import { ContentInput } from '../../libs/dto/content/contentInput';
 import { ContentUpdate } from '../../libs/dto/content/contentUpdate';
 import { ContentStatus, ContentType } from '../../libs/enums/content.enum';
@@ -12,101 +12,91 @@ import { GroupStatus } from '../../libs/enums/group.enum';
 @Injectable()
 export class ContentService {
   constructor(
-    @InjectRepository(ContentEntity)
-    private contentRepo: Repository<ContentEntity>,
+    @InjectModel(ContentEntity.name)
+    private contentModel: Model<ContentDocument>,
 
-    @InjectRepository(GroupEntity)
-    private groupRepo: Repository<GroupEntity>,
+    @InjectModel(GroupEntity.name)
+    private groupModel: Model<GroupDocument>,
 
-    @InjectRepository(UserGroupEntity)
-    private userGroupRepo: Repository<UserGroupEntity>,
+    @InjectModel(UserGroupEntity.name)
+    private userGroupModel: Model<UserGroupDocument>,
   ) {}
 
-  async createContent(input: ContentInput, createdBy: string): Promise<ContentEntity> {
-    const content = this.contentRepo.create({ ...input, createdBy });
-    return this.contentRepo.save(content);
+  async createContent(input: ContentInput, createdBy: string): Promise<ContentDocument> {
+    return this.contentModel.create({ ...input, createdBy });
   }
 
-  async updateContent(contentId: string, input: ContentUpdate): Promise<ContentEntity> {
-    await this.contentRepo.update(contentId, { ...input });
+  async updateContent(contentId: string, input: ContentUpdate): Promise<ContentDocument> {
+    await this.contentModel.updateOne({ _id: contentId }, { $set: { ...input } });
     return this.getContentById(contentId);
   }
 
-  async getContentById(contentId: string): Promise<ContentEntity> {
-    const content = await this.contentRepo.findOne({ where: { id: contentId } });
+  async getContentById(contentId: string): Promise<ContentDocument> {
+    const content = await this.contentModel.findById(contentId);
     if (!content) throw new NotFoundException('Content not found');
     return content;
   }
 
-  async getPublishedByType(contentType: ContentType): Promise<ContentEntity[]> {
-    return this.contentRepo.find({
-      where: { contentType, contentStatus: ContentStatus.PUBLISHED },
-      order: { publishedAt: 'DESC' },
-    });
+  async getPublishedByType(contentType: ContentType): Promise<ContentDocument[]> {
+    return this.contentModel
+      .find({ contentType, contentStatus: ContentStatus.PUBLISHED })
+      .sort({ publishedAt: -1 });
   }
 
-  async getSuccessStories(): Promise<ContentEntity[]> {
+  async getSuccessStories(): Promise<ContentDocument[]> {
     return this.getPublishedByType(ContentType.SUCCESS_STORY);
   }
 
-  async getTeachers(): Promise<ContentEntity[]> {
+  async getTeachers(): Promise<ContentDocument[]> {
     return this.getPublishedByType(ContentType.TEACHER);
   }
 
-  async getEvents(): Promise<ContentEntity[]> {
+  async getEvents(): Promise<ContentDocument[]> {
     return this.getPublishedByType(ContentType.EVENT);
   }
 
-  async getFaqs(): Promise<ContentEntity[]> {
-    return this.contentRepo.find({
-      where: { contentType: ContentType.FAQ, contentStatus: ContentStatus.PUBLISHED },
-      order: { createdAt: 'ASC' },
-    });
+  async getFaqs(): Promise<ContentDocument[]> {
+    return this.contentModel
+      .find({ contentType: ContentType.FAQ, contentStatus: ContentStatus.PUBLISHED })
+      .sort({ createdAt: 1 });
   }
 
-  async getBook(): Promise<ContentEntity | null> {
-    return this.contentRepo.findOne({
-      where: { contentType: ContentType.BOOK },
-      order: { updatedAt: 'DESC' },
-    });
+  async getBook(): Promise<ContentDocument | null> {
+    return this.contentModel.findOne({ contentType: ContentType.BOOK }).sort({ updatedAt: -1 });
   }
 
   async incrementView(contentId: string): Promise<void> {
-    await this.contentRepo.increment({ id: contentId }, 'viewCount', 1);
+    await this.contentModel.updateOne({ _id: contentId }, { $inc: { viewCount: 1 } });
   }
 
-  async getActiveUserGroups(userId: string): Promise<UserGroupEntity[]> {
-    const userGroups = await this.userGroupRepo.find({ where: { userId } });
+  async getActiveUserGroups(userId: string): Promise<UserGroupDocument[]> {
+    const userGroups = await this.userGroupModel.find({ userId });
     if (userGroups.length === 0) return [];
-    const activeGroups = await this.groupRepo.find({
-      where: {
-        id: In(userGroups.map((ug) => ug.groupId)),
-        groupStatus: GroupStatus.ACTIVE,
-      },
-      select: { id: true },
-    });
+    const activeGroups = await this.groupModel.find(
+      { _id: { $in: userGroups.map((ug) => ug.groupId) }, groupStatus: GroupStatus.ACTIVE },
+      '_id',
+    );
     const activeIds = new Set(activeGroups.map((g) => g.id));
     return userGroups.filter((ug) => activeIds.has(ug.groupId));
   }
 
-  async getGroupMaterials(groupId: string): Promise<ContentEntity[]> {
-    const group = await this.groupRepo.findOne({ where: { id: groupId } });
+  async getGroupMaterials(groupId: string): Promise<ContentDocument[]> {
+    const group = await this.groupModel.findById(groupId);
     if (!group || group.groupStatus !== GroupStatus.ACTIVE) {
       throw new ForbiddenException('Guruh faol emas yoki mavjud emas');
     }
-    return this.contentRepo.find({
-      where: { groupId, contentType: ContentType.LESSON, contentStatus: ContentStatus.PUBLISHED },
-      order: { createdAt: 'DESC' },
-    });
+    return this.contentModel
+      .find({ groupId, contentType: ContentType.LESSON, contentStatus: ContentStatus.PUBLISHED })
+      .sort({ createdAt: -1 });
   }
 
-  async getAllContent(): Promise<ContentEntity[]> {
-    return this.contentRepo.find({ order: { createdAt: 'DESC' } });
+  async getAllContent(): Promise<ContentDocument[]> {
+    return this.contentModel.find().sort({ createdAt: -1 });
   }
 
   async deleteContent(contentId: string): Promise<boolean> {
     const content = await this.getContentById(contentId);
-    await this.contentRepo.remove(content);
+    await this.contentModel.deleteOne({ _id: content._id });
     return true;
   }
 }

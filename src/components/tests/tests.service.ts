@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
-import { TestEntity } from '../../schema/Test.model';
-import { QuestionEntity } from '../../schema/Question.model';
-import { UserGroupEntity } from '../../schema/User_Group.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { TestEntity, TestDocument } from '../../schema/Test.model';
+import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
+import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.model';
 import { TestInput } from '../../libs/dto/test/testInput';
 import { TestUpdate } from '../../libs/dto/test/testUpdate';
 import { QuestionInput } from '../../libs/dto/question/questionInput';
@@ -12,45 +12,42 @@ import { TestAccess, TestStatus } from '../../libs/enums/test.enum';
 @Injectable()
 export class TestsService {
   constructor(
-    @InjectRepository(TestEntity)
-    private testRepo: Repository<TestEntity>,
+    @InjectModel(TestEntity.name)
+    private testModel: Model<TestDocument>,
 
-    @InjectRepository(QuestionEntity)
-    private questionRepo: Repository<QuestionEntity>,
+    @InjectModel(QuestionEntity.name)
+    private questionModel: Model<QuestionDocument>,
 
-    @InjectRepository(UserGroupEntity)
-    private userGroupRepo: Repository<UserGroupEntity>,
+    @InjectModel(UserGroupEntity.name)
+    private userGroupModel: Model<UserGroupDocument>,
   ) {}
 
-  async createTest(input: TestInput, createdBy: string): Promise<TestEntity> {
-    const test = this.testRepo.create({ ...input, createdBy });
-    return this.testRepo.save(test);
+  async createTest(input: TestInput, createdBy: string): Promise<TestDocument> {
+    return this.testModel.create({ ...input, createdBy });
   }
 
-  async updateTest(testId: string, input: TestUpdate): Promise<TestEntity> {
-    await this.testRepo.update(testId, { ...input });
+  async updateTest(testId: string, input: TestUpdate): Promise<TestDocument> {
+    await this.testModel.updateOne({ _id: testId }, { $set: { ...input } });
     return this.getTestById(testId);
   }
 
-  async getTestById(testId: string): Promise<TestEntity> {
-    const test = await this.testRepo.findOne({ where: { id: testId } });
+  async getTestById(testId: string): Promise<TestDocument> {
+    const test = await this.testModel.findById(testId);
     if (!test) throw new NotFoundException('Test not found');
     return test;
   }
 
   // Access tekshiruvi
-  async getTestWithAccess(testId: string, userId: string): Promise<TestEntity> {
+  async getTestWithAccess(testId: string, userId: string): Promise<TestDocument> {
     const test = await this.getTestById(testId);
 
     if (test.testAccess === TestAccess.PUBLIC) return test;
 
     if (test.testAccess === TestAccess.GROUP) {
-      const hasAccess = await this.userGroupRepo.findOne({
-        where: {
-          userId,
-          groupId: test.groupId,
-          expiresAt: MoreThan(new Date()),
-        },
+      const hasAccess = await this.userGroupModel.findOne({
+        userId,
+        groupId: test.groupId,
+        expiresAt: { $gt: new Date() },
       });
       if (!hasAccess) throw new ForbiddenException('Bu test faqat guruh talabalariga ochiq');
       return test;
@@ -65,60 +62,50 @@ export class TestsService {
   }
 
   // Barcha published testlar (PUBLIC + PREMIUM) — kirish huquqi test boshlananda tekshiriladi
-  async getPublicTests(): Promise<TestEntity[]> {
-    return this.testRepo.find({
-      where: { testStatus: TestStatus.PUBLISHED },
-      order: { createdAt: 'DESC' },
-    });
+  async getPublicTests(): Promise<TestDocument[]> {
+    return this.testModel.find({ testStatus: TestStatus.PUBLISHED }).sort({ createdAt: -1 });
   }
 
   // Guruh testlari
-  async getGroupTests(groupId: string): Promise<TestEntity[]> {
-    return this.testRepo.find({
-      where: { groupId, testStatus: TestStatus.PUBLISHED },
-      order: { createdAt: 'DESC' },
-    });
+  async getGroupTests(groupId: string): Promise<TestDocument[]> {
+    return this.testModel.find({ groupId, testStatus: TestStatus.PUBLISHED }).sort({ createdAt: -1 });
   }
 
   // Savollar
-  async addQuestion(input: QuestionInput): Promise<QuestionEntity> {
-    const question = this.questionRepo.create(input);
-    await this.testRepo.increment({ id: input.testId }, 'totalQuestions', 1);
-    return this.questionRepo.save(question);
+  async addQuestion(input: QuestionInput): Promise<QuestionDocument> {
+    const question = await this.questionModel.create(input);
+    await this.testModel.updateOne({ _id: input.testId }, { $inc: { totalQuestions: 1 } });
+    return question;
   }
 
-  async getQuestionsByTest(testId: string): Promise<QuestionEntity[]> {
-    return this.questionRepo.find({
-      where: { testId },
-      order: { orderIndex: 'ASC' },
-    });
+  async getQuestionsByTest(testId: string): Promise<QuestionDocument[]> {
+    return this.questionModel.find({ testId }).sort({ orderIndex: 1 });
   }
 
-  async updateQuestion(questionId: string, input: any): Promise<QuestionEntity> {
-    await this.questionRepo.update(questionId, { ...input });
-    const q = await this.questionRepo.findOne({ where: { id: questionId } });
+  async updateQuestion(questionId: string, input: any): Promise<QuestionDocument> {
+    const q = await this.questionModel.findByIdAndUpdate(questionId, { $set: { ...input } }, { new: true });
     if (!q) throw new NotFoundException('Question not found');
     return q;
   }
 
   async deleteQuestion(questionId: string): Promise<boolean> {
-    const question = await this.questionRepo.findOne({ where: { id: questionId } });
+    const question = await this.questionModel.findById(questionId);
     if (!question) throw new NotFoundException('Question not found');
-    await this.questionRepo.remove(question);
-    await this.testRepo.decrement({ id: question.testId }, 'totalQuestions', 1);
+    await this.questionModel.deleteOne({ _id: questionId });
+    await this.testModel.updateOne({ _id: question.testId }, { $inc: { totalQuestions: -1 } });
     return true;
   }
 
   async deleteTest(testId: string): Promise<boolean> {
-    const test = await this.testRepo.findOne({ where: { id: testId } });
+    const test = await this.testModel.findById(testId);
     if (!test) throw new NotFoundException('Test not found');
-    await this.questionRepo.delete({ testId });
-    await this.testRepo.remove(test);
+    await this.questionModel.deleteMany({ testId });
+    await this.testModel.deleteOne({ _id: testId });
     return true;
   }
 
   // Admin
-  async getAllTests(): Promise<TestEntity[]> {
-    return this.testRepo.find({ order: { createdAt: 'DESC' } });
+  async getAllTests(): Promise<TestDocument[]> {
+    return this.testModel.find().sort({ createdAt: -1 });
   }
 }

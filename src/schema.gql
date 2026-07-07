@@ -237,7 +237,7 @@ type Mutation {
   resolveReport(reportId: String!): Report!
   setGooglePassword(password: String!, userId: String!): Boolean!
   submitTest(input: ResultInput!): Result!
-  telegramLogin(authDate: Int!, hash: String!, telegramId: String!, userImage: String, userLastName: String, userName: String): AuthResponse!
+  telegramLogin(authDate: Int!, hash: String!, telegramId: String!, telegramUsername: String, userImage: String, userLastName: String, userName: String): AuthResponse!
   updateContent(contentId: String!, input: ContentUpdate!): Content!
   updateGroup(groupId: String!, input: GroupUpdate!): Group!
   updateQuestion(input: QuestionUpdate!, questionId: String!): Question!

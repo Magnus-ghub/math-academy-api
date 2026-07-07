@@ -1,33 +1,34 @@
 import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UserEntity } from 'src/schema/User.model';
-import { GroupEntity } from 'src/schema/Group.model';
-import { UserGroupEntity } from 'src/schema/User_Group.model';
+import { UserEntity, UserDocument } from 'src/schema/User.model';
+import { GroupEntity, GroupDocument } from 'src/schema/Group.model';
+import { UserGroupEntity, UserGroupDocument } from 'src/schema/User_Group.model';
 import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import { GroupStatus } from 'src/libs/enums/group.enum';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(UserEntity)
-    private userRepo: Repository<UserEntity>,
+    @InjectModel(UserEntity.name)
+    private userModel: Model<UserDocument>,
 
-    @InjectRepository(GroupEntity)
-    private groupRepo: Repository<GroupEntity>,
+    @InjectModel(GroupEntity.name)
+    private groupModel: Model<GroupDocument>,
 
-    @InjectRepository(UserGroupEntity)
-    private userGroupRepo: Repository<UserGroupEntity>,
+    @InjectModel(UserGroupEntity.name)
+    private userGroupModel: Model<UserGroupDocument>,
 
     private jwtService: JwtService,
     private config: ConfigService,
   ) {}
 
-  private generateToken(user: UserEntity, groups: UserGroupEntity[]) {
+  private generateToken(user: UserDocument, groups: UserGroupDocument[]) {
     const payload = {
       userId: user.id,
       userRole: user.userRole,
@@ -81,12 +82,10 @@ export class AuthService {
     return expectedHash === hash;
   }
 
-  private async checkTelegramGroups(telegramId: string): Promise<GroupEntity[]> {
-    const groups = await this.groupRepo.find({
-      where: { groupStatus: 'ACTIVE' as any },
-    });
+  private async checkTelegramGroups(telegramId: string): Promise<GroupDocument[]> {
+    const groups = await this.groupModel.find({ groupStatus: GroupStatus.ACTIVE });
 
-    const memberGroups: GroupEntity[] = [];
+    const memberGroups: GroupDocument[] = [];
 
     for (const group of groups) {
       try {
@@ -106,22 +105,21 @@ export class AuthService {
     return memberGroups;
   }
 
-  private async syncUserGroups(user: UserEntity, memberGroups: GroupEntity[]) {
-    await this.userGroupRepo.delete({ userId: user.id });
+  private async syncUserGroups(user: UserDocument, memberGroups: GroupDocument[]) {
+    await this.userGroupModel.deleteMany({ userId: user.id });
 
     for (const group of memberGroups) {
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
-      const userGroup = this.userGroupRepo.create({
+      await this.userGroupModel.create({
         userId: user.id,
         groupId: group.id,
         groupType: group.groupType,
         expiresAt,
       });
-      await this.userGroupRepo.save(userGroup);
     }
 
-    const saved = await this.userGroupRepo.find({ where: { userId: user.id } });
+    const saved = await this.userGroupModel.find({ userId: user.id });
     const nameMap = new Map(memberGroups.map((g) => [g.id, g.groupName]));
     return saved.map((ug) =>
       Object.assign(ug, { groupName: nameMap.get(ug.groupId) ?? '' }),
@@ -167,12 +165,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Telegram data');
     }
 
-    let user = await this.userRepo.findOne({
-      where: { telegramId: telegramData.telegramId },
-    });
+    let user = await this.userModel.findOne({ telegramId: telegramData.telegramId });
 
     if (!user) {
-      user = this.userRepo.create({
+      user = await this.userModel.create({
         telegramId: telegramData.telegramId,
         userName: telegramData.userName,
         userLastName: telegramData.userLastName,
@@ -181,7 +177,6 @@ export class AuthService {
         userRole: UserRole.STUDENT,
         userStatus: UserStatus.ACTIVE,
       });
-      await this.userRepo.save(user);
     } else {
       // Ism/familiya faqat bo'sh bo'lsa yangilanadi (user o'zi tahrirlagan bo'lishi mumkin)
       // Rasm esa har doim Telegramdan yangilanadi (agar user o'zi yuklamagan bo'lsa)
@@ -198,7 +193,7 @@ export class AuthService {
         user.userImage = telegramData.userImage;
         changed = true;
       }
-      if (changed) await this.userRepo.save(user);
+      if (changed) await user.save();
     }
 
     const memberGroups = await this.checkTelegramGroups(telegramData.telegramId);
@@ -221,23 +216,21 @@ export class AuthService {
   }) {
     let isNewUser = false;
 
-    let user = await this.userRepo.findOne({
-      where: { googleId: googleData.googleId },
-    });
+    let user = await this.userModel.findOne({ googleId: googleData.googleId });
 
     if (!user && googleData.email) {
-      user = await this.userRepo.findOne({ where: { userEmail: googleData.email } });
+      user = await this.userModel.findOne({ userEmail: googleData.email });
       if (user) {
         // Mavjud email bilan topildi — googleId ni bog'laymiz
         user.googleId = googleData.googleId;
         if (!user.userImage && googleData.avatar) user.userImage = googleData.avatar;
-        await this.userRepo.save(user);
+        await user.save();
       }
     }
 
     if (!user) {
       isNewUser = true;
-      user = this.userRepo.create({
+      user = await this.userModel.create({
         googleId: googleData.googleId,
         userName: googleData.name,
         userEmail: googleData.email,
@@ -246,13 +239,12 @@ export class AuthService {
         userRole: UserRole.STUDENT,
         userStatus: UserStatus.ACTIVE,
       });
-      await this.userRepo.save(user);
     } else if (!user.userEmail && googleData.email) {
       user.userEmail = googleData.email;
-      await this.userRepo.save(user);
+      await user.save();
     }
 
-    const userGroups = await this.userGroupRepo.find({ where: { userId: user.id } });
+    const userGroups = await this.userGroupModel.find({ userId: user.id });
 
     return {
       accessToken: this.generateToken(user, userGroups),
@@ -264,7 +256,7 @@ export class AuthService {
 
   // Google orqali ro'yxatdan o'tgan foydalanuvchi uchun parol o'rnatish
   async setGooglePassword(userId: string, password: string) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
 
     if (password.length < 6) {
@@ -272,14 +264,14 @@ export class AuthService {
     }
 
     user.userPassword = await bcrypt.hash(password, 10);
-    await this.userRepo.save(user);
+    await user.save();
 
     return true;
   }
 
   // Email va parol bilan kirish
   async loginWithEmail(email: string, password: string) {
-    const user = await this.userRepo.findOne({ where: { userEmail: email } });
+    const user = await this.userModel.findOne({ userEmail: email });
 
     if (!user || !user.userPassword) {
       throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
@@ -294,7 +286,7 @@ export class AuthService {
       throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
     }
 
-    const userGroups = await this.userGroupRepo.find({ where: { userId: user.id } });
+    const userGroups = await this.userGroupModel.find({ userId: user.id });
 
     return {
       accessToken: this.generateToken(user, userGroups),
@@ -306,7 +298,7 @@ export class AuthService {
 
   // Parolni tiklash so'rovi — email orqali token yuborish
   async requestPasswordReset(email: string) {
-    const user = await this.userRepo.findOne({ where: { userEmail: email } });
+    const user = await this.userModel.findOne({ userEmail: email });
 
     // Xavfsizlik uchun user topilmasa ham muvaffaqiyatli qaytaramiz
     if (!user) return true;
@@ -316,7 +308,7 @@ export class AuthService {
 
     user.resetPasswordToken = token;
     user.resetPasswordExpires = expires;
-    await this.userRepo.save(user);
+    await user.save();
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
@@ -342,9 +334,7 @@ export class AuthService {
 
   // Yangi parol o'rnatish
   async resetPassword(token: string, newPassword: string) {
-    const user = await this.userRepo.findOne({
-      where: { resetPasswordToken: token },
-    });
+    const user = await this.userModel.findOne({ resetPasswordToken: token });
 
     if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
       throw new BadRequestException('Token yaroqsiz yoki muddati o\'tgan');
@@ -357,14 +347,14 @@ export class AuthService {
     user.userPassword = await bcrypt.hash(newPassword, 10);
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
-    await this.userRepo.save(user);
+    await user.save();
 
     return true;
   }
 
   // Parolni o'zgartirish (profil sahifasidan)
   async changePassword(userId: string, currentPassword: string | undefined, newPassword: string) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
 
     if (newPassword.length < 6) {
@@ -382,7 +372,7 @@ export class AuthService {
     }
 
     user.userPassword = await bcrypt.hash(newPassword, 10);
-    await this.userRepo.save(user);
+    await user.save();
     return true;
   }
 

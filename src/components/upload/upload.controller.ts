@@ -13,19 +13,19 @@ import { extname, join } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import * as mammoth from 'mammoth';
 import * as fs from 'fs';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { QuestionEntity } from '../../schema/Question.model';
-import { TestEntity } from '../../schema/Test.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
+import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { TestAccess, TestType } from '../../libs/enums/test.enum';
 
 @Controller('upload')
 export class UploadController {
   constructor(
-    @InjectRepository(QuestionEntity)
-    private questionRepo: Repository<QuestionEntity>,
-    @InjectRepository(TestEntity)
-    private testRepo: Repository<TestEntity>,
+    @InjectModel(QuestionEntity.name)
+    private questionModel: Model<QuestionDocument>,
+    @InjectModel(TestEntity.name)
+    private testModel: Model<TestDocument>,
   ) {}
 
   @Post('pdf')
@@ -107,7 +107,7 @@ export class UploadController {
     if (!file) throw new BadRequestException('Fayl yuklanmadi');
     if (!testId) throw new BadRequestException('testId kerak');
 
-    const test = await this.testRepo.findOne({ where: { id: testId } });
+    const test = await this.testModel.findById(testId);
     if (!test) throw new BadRequestException('Test topilmadi');
 
     // docx ni text ga o'girish
@@ -125,19 +125,18 @@ export class UploadController {
     let savedCount = 0;
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      const question = this.questionRepo.create({
+      await this.questionModel.create({
         testId,
         questionText: q.questionText,
         options: q.options,
         correctAnswer: q.correctAnswer,
         orderIndex: i + 1,
       });
-      await this.questionRepo.save(question);
       savedCount++;
     }
 
     // totalQuestions yangilash
-    await this.testRepo.update(testId, { totalQuestions: savedCount });
+    await this.testModel.updateOne({ _id: testId }, { $set: { totalQuestions: savedCount } });
 
     return {
       success: true,
@@ -180,7 +179,7 @@ export class UploadController {
     // testId berilmagan bo'lsa yangi test yaratamiz
     if (!testId) {
       if (!body.testTitle) throw new BadRequestException('testTitle kerak');
-      const test = this.testRepo.create({
+      const saved = await this.testModel.create({
         testTitle: body.testTitle,
         testType: (body.testType as TestType) || TestType.DTM,
         testAccess: (body.testAccess as TestAccess) || TestAccess.PUBLIC,
@@ -189,10 +188,9 @@ export class UploadController {
         testDesc: body.testDesc || undefined,
         createdBy: body.createdBy || 'admin',
       });
-      const saved = await this.testRepo.save(test);
       testId = saved.id;
     } else {
-      const existing = await this.testRepo.findOne({ where: { id: testId } });
+      const existing = await this.testModel.findById(testId);
       if (!existing) throw new BadRequestException('Test topilmadi');
     }
 
@@ -222,7 +220,7 @@ export class UploadController {
         imageUrl = q.questionImage;
       }
 
-      const question = this.questionRepo.create({
+      await this.questionModel.create({
         testId,
         questionText: q.questionText,
         questionImage: imageUrl,
@@ -233,14 +231,13 @@ export class UploadController {
         analysis: q.analysis || undefined,
         orderIndex: i + 1,
       });
-      await this.questionRepo.save(question);
       savedCount++;
     }
 
     const testUpdate: Record<string, any> = { totalQuestions: savedCount };
     if (body.testYoutubeUrl) testUpdate.testYoutubeUrl = body.testYoutubeUrl;
     if (body.testAnalysis) testUpdate.testAnalysis = body.testAnalysis;
-    await this.testRepo.update(testId, testUpdate);
+    await this.testModel.updateOne({ _id: testId }, { $set: testUpdate });
 
     return {
       success: true,

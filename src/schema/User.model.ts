@@ -1,62 +1,68 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('users')
+export type UserDocument = HydratedDocument<UserEntity>;
+
+@Schema({ timestamps: true, collection: 'users', toObject: { virtuals: true }, toJSON: { virtuals: true } })
 export class UserEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
+  @Prop({ enum: Object.values(UserRole), type: String, default: UserRole.STUDENT })
   userRole: UserRole;
 
-  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
+  @Prop({ enum: Object.values(UserStatus), type: String, default: UserStatus.ACTIVE })
   userStatus: UserStatus;
 
-  @Column({ type: 'enum', enum: UserAuthType })
+  @Prop({ enum: Object.values(UserAuthType), type: String, required: true })
   userAuthType: UserAuthType;
 
-  @Column({ unique: true, nullable: true })
-  telegramId: string;
+  @Prop({ type: String, default: null })
+  telegramId: string | null;
 
-  @Column({ unique: true, nullable: true })
-  googleId: string;
+  @Prop({ type: String, default: null })
+  googleId: string | null;
 
-  @Column({ nullable: true })
-  userName: string;
+  @Prop({ type: String, default: null })
+  userName: string | null;
 
-  @Column({ nullable: true })
-  userLastName: string;
+  @Prop({ type: String, default: null })
+  userLastName: string | null;
 
-  @Column({ nullable: true })
-  userPhone: string;
+  @Prop({ type: String, default: null })
+  userPhone: string | null;
 
-  @Column({ nullable: true })
-  userImage: string;
+  @Prop({ type: String, default: null })
+  userImage: string | null;
 
-  @Column({ nullable: true })
-  userAddress: string;
+  @Prop({ type: String, default: null })
+  userAddress: string | null;
 
-  @Column({ nullable: true })
-  userDesc: string;
+  @Prop({ type: String, default: null })
+  userDesc: string | null;
 
-  @Column({ unique: true, nullable: true })
-  userEmail: string;
+  @Prop({ type: String, default: null })
+  userEmail: string | null;
 
-  @Column({ nullable: true })
-  userPassword: string;
+  @Prop({ type: String, default: null })
+  userPassword: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Prop({ type: String, default: null })
   resetPasswordToken: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Prop({ type: Date, default: null })
   resetPasswordExpires: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Prop({ type: Date, default: null })
   premiumExpiresAt: Date | null;
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const UserSchema = SchemaFactory.createForClass(UserEntity);
+
+UserSchema.index({ telegramId: 1 }, { unique: true, partialFilterExpression: { telegramId: { $type: 'string' } } });
+UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { googleId: { $type: 'string' } } });
+UserSchema.index({ userEmail: 1 }, { unique: true, partialFilterExpression: { userEmail: { $type: 'string' } } });
+UserSchema.index({ resetPasswordToken: 1 });
+UserSchema.index({ userRole: 1 });
+UserSchema.index({ createdAt: -1 });

@@ -1,47 +1,49 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { ContentType, ContentStatus } from '../libs/enums/content.enum';
 
-@Entity('contents')
-export class ContentEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export type ContentDocument = HydratedDocument<ContentEntity>;
 
-  @Column({ type: 'enum', enum: ContentType })
+@Schema({ timestamps: true, collection: 'contents', toObject: { virtuals: true }, toJSON: { virtuals: true } })
+export class ContentEntity {
+  @Prop({ enum: Object.values(ContentType), type: String, required: true })
   contentType: ContentType;
 
-  @Column({ type: 'enum', enum: ContentStatus, default: ContentStatus.DRAFT })
+  @Prop({ enum: Object.values(ContentStatus), type: String, default: ContentStatus.DRAFT })
   contentStatus: ContentStatus;
 
-  @Column()
+  @Prop({ type: String, required: true })
   contentTitle: string;
 
-  @Column({ nullable: true, type: 'text' })
-  contentDesc: string;
+  @Prop({ type: String, default: null })
+  contentDesc: string | null;
 
-  @Column({ nullable: true })
-  contentImage: string;
+  @Prop({ type: String, default: null })
+  contentImage: string | null;
 
-  @Column({ nullable: true })
-  contentVideo: string;
+  @Prop({ type: String, default: null })
+  contentVideo: string | null;
 
-  @Column({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   viewCount: number;
 
-  @Column({ nullable: true })
-  groupId: string;
+  @Prop({ type: String, default: null })
+  groupId: string | null;
 
-  @Column()
+  @Prop({ type: String, required: true })
   createdBy: string;
 
-  @Column({ type: 'text', nullable: true })
-  metaJson: string;
+  @Prop({ type: String, default: null })
+  metaJson: string | null;
 
-  @Column({ nullable: true })
-  publishedAt: Date;
+  @Prop({ type: Date, default: null })
+  publishedAt: Date | null;
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const ContentSchema = SchemaFactory.createForClass(ContentEntity);
+
+ContentSchema.index({ contentType: 1, contentStatus: 1, publishedAt: -1 });
+ContentSchema.index({ groupId: 1, contentType: 1, contentStatus: 1 });

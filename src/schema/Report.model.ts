@@ -1,32 +1,41 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { ReportType, ReportStatus, ReportReason } from '../libs/enums/report.enum';
 
-@Entity('reports')
-export class ReportEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export type ReportDocument = HydratedDocument<ReportEntity>;
 
-  @Column({ type: 'enum', enum: ReportType })
+@Schema({
+  timestamps: { createdAt: true, updatedAt: false },
+  collection: 'reports',
+  toObject: { virtuals: true },
+  toJSON: { virtuals: true },
+})
+export class ReportEntity {
+  @Prop({ enum: Object.values(ReportType), type: String, required: true })
   reportType: ReportType;
 
-  @Column({ type: 'enum', enum: ReportStatus, default: ReportStatus.PENDING })
+  @Prop({ enum: Object.values(ReportStatus), type: String, default: ReportStatus.PENDING })
   reportStatus: ReportStatus;
 
-  @Column({ type: 'enum', enum: ReportReason })
+  @Prop({ enum: Object.values(ReportReason), type: String, required: true })
   reportReason: ReportReason;
 
-  @Column({ nullable: true, type: 'text' })
-  reportText: string;
+  @Prop({ type: String, default: null })
+  reportText: string | null;
 
-  @Column()
+  @Prop({ type: String, required: true })
   userId: string;
 
-  @Column({ nullable: true })
-  questionId: string;
+  @Prop({ type: String, default: null })
+  questionId: string | null;
 
-  @Column({ nullable: true })
-  testId: string;
+  @Prop({ type: String, default: null })
+  testId: string | null;
 
-  @CreateDateColumn()
   createdAt: Date;
 }
+
+export const ReportSchema = SchemaFactory.createForClass(ReportEntity);
+
+ReportSchema.index({ reportStatus: 1, createdAt: -1 });
+ReportSchema.index({ questionId: 1, createdAt: -1 });

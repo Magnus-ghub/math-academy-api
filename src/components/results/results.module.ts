@@ -1,14 +1,21 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ResultsService } from './results.service';
 import { ResultsResolver } from './results.resolver';
-import { ResultEntity } from '../../schema/Result.model';
-import { TestEntity } from '../../schema/Test.model';
-import { QuestionEntity } from '../../schema/Question.model';
-import { UserEntity } from '../../schema/User.model';
+import { ResultEntity, ResultSchema } from '../../schema/Result.model';
+import { TestEntity, TestSchema } from '../../schema/Test.model';
+import { QuestionEntity, QuestionSchema } from '../../schema/Question.model';
+import { UserEntity, UserSchema } from '../../schema/User.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ResultEntity, TestEntity, QuestionEntity, UserEntity])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: ResultEntity.name, schema: ResultSchema },
+      { name: TestEntity.name, schema: TestSchema },
+      { name: QuestionEntity.name, schema: QuestionSchema },
+      { name: UserEntity.name, schema: UserSchema },
+    ]),
+  ],
   providers: [ResultsService, ResultsResolver],
   exports: [ResultsService],
 })

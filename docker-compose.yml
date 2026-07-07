@@ -14,27 +14,7 @@ services:
     working_dir: /usr/src/math-academy-api
     networks:
       - math-academy-network
-    depends_on:
-      - postgres
     command: bash -c "rm -rf dist && npm install --include=dev && npm run build && npm run start:prod"
-
-  postgres:
-    container_name: math-academy-db
-    image: postgres:16
-    restart: always
-    environment:
-      POSTGRES_DB: math_academy
-      POSTGRES_USER: math_user
-      POSTGRES_PASSWORD: math123
-    ports:
-      - 5433:5432
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - math-academy-network
-
-volumes:
-  postgres_data:
 
 networks:
   math-academy-network:

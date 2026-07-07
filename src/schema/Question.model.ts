@@ -1,44 +1,52 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { QuestionType } from '../libs/enums/question.enum';
 
-@Entity('questions')
-export class QuestionEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export type QuestionDocument = HydratedDocument<QuestionEntity>;
 
-  @Column()
+@Schema({
+  timestamps: { createdAt: true, updatedAt: false },
+  collection: 'questions',
+  toObject: { virtuals: true },
+  toJSON: { virtuals: true },
+})
+export class QuestionEntity {
+  @Prop({ type: String, required: true })
   testId: string;
 
-  @Column({ type: 'enum', enum: QuestionType, default: QuestionType.SINGLE })
+  @Prop({ enum: Object.values(QuestionType), type: String, default: QuestionType.SINGLE })
   questionType: QuestionType;
 
-  @Column('text')
+  @Prop({ type: String, required: true })
   questionText: string;
 
-  @Column({ nullable: true })
-  questionImage: string;
+  @Prop({ type: String, default: null })
+  questionImage: string | null;
 
-  @Column({ nullable: true })
-  section: string;
+  @Prop({ type: String, default: null })
+  section: string | null;
 
-  @Column({ type: 'json' })
+  @Prop({ type: [String], default: [] })
   options: string[];
 
-  @Column()
+  @Prop({ type: Number, required: true })
   correctAnswer: number;
 
-  @Column({ nullable: true, type: 'text' })
-  explanation: string;
+  @Prop({ type: String, default: null })
+  explanation: string | null;
 
-  @Column({ nullable: true })
-  youtubeUrl: string;
+  @Prop({ type: String, default: null })
+  youtubeUrl: string | null;
 
-  @Column({ nullable: true, type: 'text' })
-  analysis: string;
+  @Prop({ type: String, default: null })
+  analysis: string | null;
 
-  @Column()
+  @Prop({ type: Number, required: true })
   orderIndex: number;
 
-  @CreateDateColumn()
   createdAt: Date;
 }
+
+export const QuestionSchema = SchemaFactory.createForClass(QuestionEntity);
+
+QuestionSchema.index({ testId: 1, orderIndex: 1 });

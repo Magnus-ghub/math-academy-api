@@ -1,68 +1,70 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { TestType, TestAccess, TestStatus, TestBlock, DTMType, TestDifficulty } from '../libs/enums/test.enum';
 
-@Entity('tests')
-export class TestEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export type TestDocument = HydratedDocument<TestEntity>;
 
-  @Column({ type: 'enum', enum: TestType })
+@Schema({ timestamps: true, collection: 'tests', toObject: { virtuals: true }, toJSON: { virtuals: true } })
+export class TestEntity {
+  @Prop({ enum: Object.values(TestType), type: String, required: true })
   testType: TestType;
 
-  @Column({ type: 'enum', enum: TestAccess, default: TestAccess.PUBLIC })
+  @Prop({ enum: Object.values(TestAccess), type: String, default: TestAccess.PUBLIC })
   testAccess: TestAccess;
 
-  @Column({ type: 'enum', enum: TestStatus, default: TestStatus.DRAFT })
+  @Prop({ enum: Object.values(TestStatus), type: String, default: TestStatus.DRAFT })
   testStatus: TestStatus;
 
-  @Column({ type: 'enum', enum: TestBlock, nullable: true })
-  testBlock: TestBlock;
+  @Prop({ enum: Object.values(TestBlock), type: String, default: null })
+  testBlock: TestBlock | null;
 
-  @Column({ type: 'enum', enum: DTMType, nullable: true })
-  dtmType: DTMType;
+  @Prop({ enum: Object.values(DTMType), type: String, default: null })
+  dtmType: DTMType | null;
 
-  @Column({ type: 'enum', enum: TestDifficulty, default: TestDifficulty.STANDART })
+  @Prop({ enum: Object.values(TestDifficulty), type: String, default: TestDifficulty.STANDART })
   testDifficulty: TestDifficulty;
 
-  @Column()
+  @Prop({ type: String, required: true })
   testTitle: string;
 
-  @Column({ nullable: true })
-  testDesc: string;
+  @Prop({ type: String, default: null })
+  testDesc: string | null;
 
-  @Column({ nullable: true })
-  testImage: string;
+  @Prop({ type: String, default: null })
+  testImage: string | null;
 
-  @Column({ nullable: true })
-  testPdfUrl: string;
+  @Prop({ type: String, default: null })
+  testPdfUrl: string | null;
 
-  @Column({ nullable: true })
-  testYoutubeUrl: string;
+  @Prop({ type: String, default: null })
+  testYoutubeUrl: string | null;
 
-  @Column({ nullable: true, type: 'text' })
-  testAnalysis: string;
+  @Prop({ type: String, default: null })
+  testAnalysis: string | null;
 
-  @Column()
+  @Prop({ type: Number, required: true })
   duration: number;
 
-  @Column({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   totalQuestions: number;
 
-  @Column({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   totalAttempts: number;
 
-  @Column({ nullable: true })
-  groupId: string;
+  @Prop({ type: String, default: null })
+  groupId: string | null;
 
-  @Column({ type: 'int', nullable: true })
-  testPrice: number;
+  @Prop({ type: Number, default: null })
+  testPrice: number | null;
 
-  @Column()
+  @Prop({ type: String, required: true })
   createdBy: string;
 
-  @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const TestSchema = SchemaFactory.createForClass(TestEntity);
+
+TestSchema.index({ testStatus: 1, createdAt: -1 });
+TestSchema.index({ groupId: 1, testStatus: 1, createdAt: -1 });

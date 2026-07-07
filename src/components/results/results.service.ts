@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
-import { ResultEntity } from '../../schema/Result.model';
-import { TestEntity } from '../../schema/Test.model';
-import { QuestionEntity } from '../../schema/Question.model';
-import { UserEntity } from '../../schema/User.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { ResultEntity, ResultDocument } from '../../schema/Result.model';
+import { TestEntity, TestDocument } from '../../schema/Test.model';
+import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
+import { UserEntity, UserDocument } from '../../schema/User.model';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { ResultStatus } from '../../libs/enums/result.enum';
 import { TestType } from '../../libs/enums/test.enum';
@@ -13,31 +13,31 @@ import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 @Injectable()
 export class ResultsService {
   constructor(
-    @InjectRepository(ResultEntity)
-    private resultRepo: Repository<ResultEntity>,
+    @InjectModel(ResultEntity.name)
+    private resultModel: Model<ResultDocument>,
 
-    @InjectRepository(TestEntity)
-    private testRepo: Repository<TestEntity>,
+    @InjectModel(TestEntity.name)
+    private testModel: Model<TestDocument>,
 
-    @InjectRepository(QuestionEntity)
-    private questionRepo: Repository<QuestionEntity>,
+    @InjectModel(QuestionEntity.name)
+    private questionModel: Model<QuestionDocument>,
 
-    @InjectRepository(UserEntity)
-    private userRepo: Repository<UserEntity>,
+    @InjectModel(UserEntity.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
-  async submitTest(userId: string, input: ResultInput): Promise<ResultEntity> {
-    const test = await this.testRepo.findOne({ where: { id: input.testId } });
+  async submitTest(userId: string, input: ResultInput): Promise<ResultDocument> {
+    const test = await this.testModel.findById(input.testId);
     if (!test) throw new NotFoundException('Test not found');
 
-    const existing = await this.resultRepo.findOne({
-      where: { userId, testId: input.testId, resultStatus: ResultStatus.COMPLETED },
+    const existing = await this.resultModel.findOne({
+      userId,
+      testId: input.testId,
+      resultStatus: ResultStatus.COMPLETED,
     });
     if (existing) throw new ConflictException('Bu testni allaqachon topshirgansiz');
 
-    const questions = await this.questionRepo.find({
-      where: { testId: input.testId },
-    });
+    const questions = await this.questionModel.find({ testId: input.testId });
 
     // Javoblarni tekshirish
     let correctAnswers = 0;
@@ -55,7 +55,9 @@ export class ResultsService {
 
     const score = (correctAnswers / questions.length) * 100;
 
-    const result = this.resultRepo.create({
+    await this.testModel.updateOne({ _id: input.testId }, { $inc: { totalAttempts: 1 } });
+
+    return this.resultModel.create({
       userId,
       testId: input.testId,
       groupId: test.groupId,
@@ -67,54 +69,40 @@ export class ResultsService {
       resultStatus: ResultStatus.COMPLETED,
       finishedAt: new Date(),
     });
-
-    await this.testRepo.increment({ id: input.testId }, 'totalAttempts', 1);
-
-    const saved = await this.resultRepo.save(result);
-
-    return saved;
   }
 
-  async checkMyAttempt(userId: string, testId: string): Promise<ResultEntity | null> {
-    return this.resultRepo.findOne({
-      where: { userId, testId, resultStatus: ResultStatus.COMPLETED },
-    });
+  async checkMyAttempt(userId: string, testId: string): Promise<ResultDocument | null> {
+    return this.resultModel.findOne({ userId, testId, resultStatus: ResultStatus.COMPLETED });
   }
 
   async getMyResults(userId: string): Promise<any[]> {
-    const results = await this.resultRepo.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+    const results = await this.resultModel.find({ userId }).sort({ createdAt: -1 });
 
     const testIds = [...new Set(results.map((r) => r.testId))];
-    const tests = await this.testRepo.findBy({ id: In(testIds) });
-    const testMap = new Map<string, TestEntity>(tests.map((t) => [t.id, t]));
+    const tests = await this.testModel.find({ _id: { $in: testIds } });
+    const testMap = new Map<string, TestDocument>(tests.map((t) => [t.id, t]));
 
     return results.map((r) => ({
-      ...r,
+      ...r.toObject(),
       testTitle: testMap.get(r.testId)?.testTitle ?? null,
       testType: testMap.get(r.testId)?.testType ?? null,
     }));
   }
 
   async getResultById(resultId: string): Promise<any> {
-    const result = await this.resultRepo.findOne({ where: { id: resultId } });
+    const result = await this.resultModel.findById(resultId);
     if (!result) throw new NotFoundException('Result not found');
-    const test = await this.testRepo.findOne({ where: { id: result.testId } });
+    const test = await this.testModel.findById(result.testId);
 
     const base = {
-      ...result,
+      ...result.toObject(),
       testTitle: test?.testTitle ?? null,
       testType: test?.testType ?? null,
     };
 
     if (test?.testType !== TestType.ATTESTATSIYA) return base;
 
-    const questions = await this.questionRepo.find({
-      where: { testId: result.testId },
-      order: { orderIndex: 'ASC' },
-    });
+    const questions = await this.questionModel.find({ testId: result.testId }).sort({ orderIndex: 1 });
 
     const questionMap = new Map(questions.map((q) => [q.id, q]));
     const totalPoints = result.correctAnswers * 2;
@@ -123,7 +111,7 @@ export class ResultsService {
     const sectionOrder: string[] = [];
     const sectionMap = new Map<string, { orderIndex: number; questionId: string; isCorrect: boolean }[]>();
 
-    for (const answer of result.answers) {
+    for (const answer of result.answers ?? []) {
       const question = questionMap.get(answer.questionId);
       if (!question) continue;
       const sectionName = question.section || 'Asosiy';
@@ -156,16 +144,15 @@ export class ResultsService {
   }
 
   async getLeaderboard(testId: string): Promise<LeaderboardEntry[]> {
-    const results = await this.resultRepo.find({
-      where: { testId, resultStatus: ResultStatus.COMPLETED },
-      order: { score: 'DESC', duration: 'ASC' },
-      take: 10,
-    });
+    const results = await this.resultModel
+      .find({ testId, resultStatus: ResultStatus.COMPLETED })
+      .sort({ score: -1, duration: 1 })
+      .limit(10);
 
     if (results.length === 0) return [];
 
     const userIds = [...new Set(results.map((r) => r.userId))];
-    const users = await this.userRepo.findBy({ id: In(userIds) });
+    const users = await this.userModel.find({ _id: { $in: userIds } });
     const userMap = new Map(users.map((u) => [u.id, u]));
 
     return results.map((r, i) => {
@@ -186,15 +173,17 @@ export class ResultsService {
   }
 
   async getGlobalLeaderboard(): Promise<any[]> {
-    return this.resultRepo
-      .createQueryBuilder('result')
-      .select('result.userId', 'userId')
-      .addSelect('AVG(result.score)', 'avgScore')
-      .addSelect('COUNT(result.id)', 'totalTests')
-      .where('result.resultStatus = :status', { status: ResultStatus.COMPLETED })
-      .groupBy('result.userId')
-      .orderBy('avgScore', 'DESC')
-      .take(20)
-      .getRawMany();
+    const rows = await this.resultModel.aggregate([
+      { $match: { resultStatus: ResultStatus.COMPLETED } },
+      { $group: { _id: '$userId', avgScore: { $avg: '$score' }, totalTests: { $sum: 1 } } },
+      { $sort: { avgScore: -1 } },
+      { $limit: 20 },
+    ]);
+
+    return rows.map((row) => ({
+      userId: row._id,
+      avgScore: row.avgScore,
+      totalTests: row.totalTests,
+    }));
   }
 }

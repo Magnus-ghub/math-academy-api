@@ -1,30 +1,38 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { CommentStatus, CommentType } from 'src/libs/enums/comment.enum';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
+export type CommentDocument = HydratedDocument<CommentEntity>;
 
-@Entity('comments')
+@Schema({
+  timestamps: { createdAt: true, updatedAt: false },
+  collection: 'comments',
+  toObject: { virtuals: true },
+  toJSON: { virtuals: true },
+})
 export class CommentEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ type: 'enum', enum: CommentType })
+  @Prop({ enum: Object.values(CommentType), type: String, required: true })
   commentType: CommentType;
 
-  @Column({ type: 'enum', enum: CommentStatus, default: CommentStatus.PENDING })
+  @Prop({ enum: Object.values(CommentStatus), type: String, default: CommentStatus.PENDING })
   commentStatus: CommentStatus;
 
-  @Column('text')
+  @Prop({ type: String, required: true })
   text: string;
 
-  @Column({ nullable: true })
-  rating: number;
+  @Prop({ type: Number, default: null })
+  rating: number | null;
 
-  @Column()
+  @Prop({ type: String, required: true })
   userId: string;
 
-  @Column({ nullable: true })
-  testId: string;
+  @Prop({ type: String, default: null })
+  testId: string | null;
 
-  @CreateDateColumn()
   createdAt: Date;
 }
+
+export const CommentSchema = SchemaFactory.createForClass(CommentEntity);
+
+CommentSchema.index({ testId: 1, commentType: 1, commentStatus: 1 });
+CommentSchema.index({ commentType: 1, commentStatus: 1, createdAt: -1 });

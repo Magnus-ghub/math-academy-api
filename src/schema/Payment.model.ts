@@ -1,38 +1,48 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { PaymentProvider, PaymentStatus, PaymentType } from '../libs/enums/payment.enum';
 
-@Entity('payments')
-export class PaymentEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export type PaymentDocument = HydratedDocument<PaymentEntity>;
 
-  @Column()
+@Schema({
+  timestamps: { createdAt: true, updatedAt: false },
+  collection: 'payments',
+  toObject: { virtuals: true },
+  toJSON: { virtuals: true },
+})
+export class PaymentEntity {
+  @Prop({ type: String, required: true })
   userId: string;
 
-  @Column({ nullable: true })
-  groupId: string;
+  @Prop({ type: String, default: null })
+  groupId: string | null;
 
-  @Column({ type: 'enum', enum: PaymentType })
+  @Prop({ enum: Object.values(PaymentType), type: String, required: true })
   paymentType: PaymentType;
 
-  @Column({ type: 'enum', enum: PaymentProvider })
+  @Prop({ enum: Object.values(PaymentProvider), type: String, required: true })
   paymentProvider: PaymentProvider;
 
-  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
+  @Prop({ enum: Object.values(PaymentStatus), type: String, default: PaymentStatus.PENDING })
   paymentStatus: PaymentStatus;
 
-  @Column()
+  @Prop({ type: Number, required: true })
   amount: number;
 
-  @Column({ nullable: true })
-  clickTransactionId: string;
+  @Prop({ type: String, default: null })
+  clickTransactionId: string | null;
 
-  @Column({ nullable: true })
-  confirmedAt: Date;
+  @Prop({ type: Date, default: null })
+  confirmedAt: Date | null;
 
-  @Column({ nullable: true })
-  confirmedBy: string;
+  @Prop({ type: String, default: null })
+  confirmedBy: string | null;
 
-  @CreateDateColumn()
   createdAt: Date;
 }
+
+export const PaymentSchema = SchemaFactory.createForClass(PaymentEntity);
+
+PaymentSchema.index({ userId: 1, createdAt: -1 });
+PaymentSchema.index({ paymentStatus: 1, createdAt: -1 });
+PaymentSchema.index({ clickTransactionId: 1 });

@@ -1,14 +1,20 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { PubSub } from 'graphql-subscriptions';
 import { ReportService } from './report.service';
 import { ReportResolver } from './report.resolver';
-import { ReportEntity } from '../../schema/Report.model';
-import { TestEntity } from '../../schema/Test.model';
-import { QuestionEntity } from '../../schema/Question.model';
+import { ReportEntity, ReportSchema } from '../../schema/Report.model';
+import { TestEntity, TestSchema } from '../../schema/Test.model';
+import { QuestionEntity, QuestionSchema } from '../../schema/Question.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ReportEntity, TestEntity, QuestionEntity])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: ReportEntity.name, schema: ReportSchema },
+      { name: TestEntity.name, schema: TestSchema },
+      { name: QuestionEntity.name, schema: QuestionSchema },
+    ]),
+  ],
   providers: [
     ReportService,
     ReportResolver,

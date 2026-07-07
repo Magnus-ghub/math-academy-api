@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { PaymentEntity } from '../../schema/Payment.model';
-import { UserEntity } from '../../schema/User.model';
-import { UserGroupEntity } from '../../schema/User_Group.model';
-import { GroupEntity } from '../../schema/Group.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { PaymentEntity, PaymentDocument } from '../../schema/Payment.model';
+import { UserEntity, UserDocument } from '../../schema/User.model';
+import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.model';
+import { GroupEntity, GroupDocument } from '../../schema/Group.model';
 import { PaymentInput } from '../../libs/dto/payment/paymentInput';
 import { PaymentProvider, PaymentStatus, PaymentType } from '../../libs/enums/payment.enum';
 import { UserRole } from '../../libs/enums/user.enum';
@@ -12,110 +12,103 @@ import { UserRole } from '../../libs/enums/user.enum';
 @Injectable()
 export class PaymentsService {
   constructor(
-    @InjectRepository(PaymentEntity)
-    private paymentRepo: Repository<PaymentEntity>,
+    @InjectModel(PaymentEntity.name)
+    private paymentModel: Model<PaymentDocument>,
 
-    @InjectRepository(UserEntity)
-    private userRepo: Repository<UserEntity>,
+    @InjectModel(UserEntity.name)
+    private userModel: Model<UserDocument>,
 
-    @InjectRepository(UserGroupEntity)
-    private userGroupRepo: Repository<UserGroupEntity>,
+    @InjectModel(UserGroupEntity.name)
+    private userGroupModel: Model<UserGroupDocument>,
 
-    @InjectRepository(GroupEntity)
-    private groupRepo: Repository<GroupEntity>,
+    @InjectModel(GroupEntity.name)
+    private groupModel: Model<GroupDocument>,
   ) {}
 
   // Yangi to'lov yaratish
-  async createPayment(userId: string, input: PaymentInput): Promise<PaymentEntity> {
-    const payment = this.paymentRepo.create({
+  async createPayment(userId: string, input: PaymentInput): Promise<PaymentDocument> {
+    return this.paymentModel.create({
       ...input,
       userId,
       paymentStatus: PaymentStatus.PENDING,
     });
-    return this.paymentRepo.save(payment);
   }
 
   // Click webhook — to'lov tasdiqlanganda
   async confirmClickPayment(clickTransactionId: string, amount: number): Promise<void> {
-    const payment = await this.paymentRepo.findOne({
-      where: { clickTransactionId, paymentStatus: PaymentStatus.PENDING },
+    const payment = await this.paymentModel.findOne({
+      clickTransactionId,
+      paymentStatus: PaymentStatus.PENDING,
     });
     if (!payment) return;
 
-    await this.paymentRepo.update(payment.id, {
-      paymentStatus: PaymentStatus.CONFIRMED,
-      confirmedAt: new Date(),
-    });
+    await this.paymentModel.updateOne(
+      { _id: payment._id },
+      { $set: { paymentStatus: PaymentStatus.CONFIRMED, confirmedAt: new Date() } },
+    );
 
     await this.activateAccess(payment);
   }
 
   // Manual confirm — admin tomonidan
-  async confirmManualPayment(paymentId: string, adminId: string): Promise<PaymentEntity> {
-    const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
+  async confirmManualPayment(paymentId: string, adminId: string): Promise<PaymentDocument> {
+    const payment = await this.paymentModel.findById(paymentId);
     if (!payment) throw new NotFoundException('Payment not found');
 
-    await this.paymentRepo.update(paymentId, {
-      paymentStatus: PaymentStatus.CONFIRMED,
-      confirmedAt: new Date(),
-      confirmedBy: adminId,
-    });
+    await this.paymentModel.updateOne(
+      { _id: paymentId },
+      { $set: { paymentStatus: PaymentStatus.CONFIRMED, confirmedAt: new Date(), confirmedBy: adminId } },
+    );
 
     await this.activateAccess(payment);
-    return this.paymentRepo.findOne({ where: { id: paymentId } }) as Promise<PaymentEntity>;
+    return this.paymentModel.findById(paymentId) as Promise<PaymentDocument>;
   }
 
   // To'lov tasdiqlangandan keyin access berish
-  private async activateAccess(payment: PaymentEntity): Promise<void> {
+  private async activateAccess(payment: PaymentDocument): Promise<void> {
     if (payment.paymentType === PaymentType.PREMIUM) {
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + 1);
-      await this.userRepo.update(payment.userId, {
-        userRole: UserRole.ACADEM_STUDENT,
-        premiumExpiresAt: expiresAt,
-      });
+      await this.userModel.updateOne(
+        { _id: payment.userId },
+        { $set: { userRole: UserRole.ACADEM_STUDENT, premiumExpiresAt: expiresAt } },
+      );
     }
 
     if (payment.paymentType === PaymentType.GROUP && payment.groupId) {
-      const group = await this.groupRepo.findOne({ where: { id: payment.groupId } });
+      const group = await this.groupModel.findById(payment.groupId);
       if (!group) return;
 
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
 
-      const existing = await this.userGroupRepo.findOne({
-        where: { userId: payment.userId, groupId: payment.groupId },
+      const existing = await this.userGroupModel.findOne({
+        userId: payment.userId,
+        groupId: payment.groupId,
       });
 
       if (existing) {
-        await this.userGroupRepo.update(existing.id, { expiresAt });
+        await this.userGroupModel.updateOne({ _id: existing._id }, { $set: { expiresAt } });
       } else {
-        const userGroup = this.userGroupRepo.create({
+        await this.userGroupModel.create({
           userId: payment.userId,
           groupId: payment.groupId,
           groupType: group.groupType,
           expiresAt,
         });
-        await this.userGroupRepo.save(userGroup);
       }
     }
   }
 
-  async getMyPayments(userId: string): Promise<PaymentEntity[]> {
-    return this.paymentRepo.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+  async getMyPayments(userId: string): Promise<PaymentDocument[]> {
+    return this.paymentModel.find({ userId }).sort({ createdAt: -1 });
   }
 
-  async getAllPayments(): Promise<PaymentEntity[]> {
-    return this.paymentRepo.find({ order: { createdAt: 'DESC' } });
+  async getAllPayments(): Promise<PaymentDocument[]> {
+    return this.paymentModel.find().sort({ createdAt: -1 });
   }
 
-  async getPendingPayments(): Promise<PaymentEntity[]> {
-    return this.paymentRepo.find({
-      where: { paymentStatus: PaymentStatus.PENDING },
-      order: { createdAt: 'DESC' },
-    });
+  async getPendingPayments(): Promise<PaymentDocument[]> {
+    return this.paymentModel.find({ paymentStatus: PaymentStatus.PENDING }).sort({ createdAt: -1 });
   }
 }
