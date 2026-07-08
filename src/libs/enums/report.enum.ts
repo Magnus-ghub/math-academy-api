@@ -15,10 +15,11 @@ export enum ReportStatus {
 registerEnumType(ReportStatus, { name: 'ReportStatus' });
 
 export enum ReportReason {
-  WRONG_ANSWER   = 'WRONG_ANSWER',   
-  WRONG_QUESTION = 'WRONG_QUESTION', 
-  TYPO           = 'TYPO',           
-  UNCLEAR        = 'UNCLEAR',      
-  OTHER          = 'OTHER',          
+  WRONG_ANSWER    = 'WRONG_ANSWER',
+  WRONG_QUESTION  = 'WRONG_QUESTION',
+  TYPO            = 'TYPO',
+  UNCLEAR         = 'UNCLEAR',
+  RETAKE_REQUEST  = 'RETAKE_REQUEST',
+  OTHER           = 'OTHER',
 }
 registerEnumType(ReportReason, { name: 'ReportReason' });

@@ -159,6 +159,7 @@ export class UploadController {
       testYoutubeUrl?: string;
       testAnalysis?: string;
       createdBy?: string;
+      replace?: boolean;
       questions: {
         questionText: string;
         questionImage?: string;
@@ -192,6 +193,13 @@ export class UploadController {
     } else {
       const existing = await this.testModel.findById(testId);
       if (!existing) throw new BadRequestException('Test topilmadi');
+
+      // Admin testni JSON orqali qayta yaratmoqchi bo'lsa (masalan, publish
+      // qilingan testni yangi savollar bilan almashtirish uchun) — eski
+      // savollarni o'chirib, yangilarini toza holda qo'shamiz.
+      if (body.replace) {
+        await this.questionModel.deleteMany({ testId });
+      }
     }
 
     const uploadsDir = join(process.cwd(), 'uploads');
@@ -225,7 +233,7 @@ export class UploadController {
         questionText: q.questionText,
         questionImage: imageUrl,
         options: q.options,
-        correctAnswer: q.correctAnswer ?? 0,
+        correctAnswer: Math.round(q.correctAnswer ?? 0),
         explanation: q.explanation || undefined,
         youtubeUrl: q.youtubeUrl || undefined,
         analysis: q.analysis || undefined,

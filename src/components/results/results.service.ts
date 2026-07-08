@@ -85,6 +85,12 @@ export class ResultsService {
     return this.resultModel.findOne({ userId, testId, resultStatus: ResultStatus.COMPLETED });
   }
 
+  // Admin talaba so'roviga ko'ra qayta topshirishga ruxsat berganda chaqiriladi —
+  // eski urinishni o'chiradi, shunda checkMyAttempt bo'sh qaytadi.
+  async resetAttempt(userId: string, testId: string): Promise<void> {
+    await this.resultModel.deleteOne({ userId, testId, resultStatus: ResultStatus.COMPLETED });
+  }
+
   async getMyResults(userId: string): Promise<any[]> {
     const results = await this.resultModel.find({ userId }).sort({ createdAt: -1 });
 

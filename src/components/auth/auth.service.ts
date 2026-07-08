@@ -85,24 +85,27 @@ export class AuthService {
 
   private async checkTelegramGroups(telegramId: string): Promise<GroupDocument[]> {
     const groups = await this.groupModel.find({ groupStatus: GroupStatus.ACTIVE });
+    const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
 
-    const memberGroups: GroupDocument[] = [];
-
-    for (const group of groups) {
-      try {
-        const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
+    // Guruhlar soni ko'p bo'lganda (10+) ketma-ket so'rov yuborish login'ni
+    // sekinlashtiradi — shuning uchun barcha guruhlarni parallel tekshiramiz.
+    const results = await Promise.allSettled(
+      groups.map(async (group) => {
         const res = await fetch(
           `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${group.telegramChatId}&user_id=${telegramId}`,
         );
         const data = await res.json();
-        if (['member', 'administrator', 'creator'].includes(data.result?.status)) {
-          memberGroups.push(group);
+        if (!['member', 'administrator', 'creator'].includes(data.result?.status)) {
+          throw new Error('not a member');
         }
-      } catch {
-        continue;
-      }
-    }
+        return group;
+      }),
+    );
 
+    const memberGroups: GroupDocument[] = [];
+    for (const r of results) {
+      if (r.status === 'fulfilled') memberGroups.push(r.value);
+    }
     return memberGroups;
   }
 

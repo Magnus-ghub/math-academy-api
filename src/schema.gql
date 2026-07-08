@@ -423,6 +423,7 @@ input ReportInput {
 
 enum ReportReason {
   OTHER
+  RETAKE_REQUEST
   TYPO
   UNCLEAR
   WRONG_ANSWER

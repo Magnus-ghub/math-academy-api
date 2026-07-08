@@ -3,10 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PubSub } from 'graphql-subscriptions';
 import { ReportEntity, ReportDocument } from '../../schema/Report.model';
-import { ReportStatus } from '../../libs/enums/report.enum';
+import { ReportStatus, ReportType, ReportReason } from '../../libs/enums/report.enum';
 import { ReportInput } from 'src/libs/dto/report/reportInput';
 import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
+import { ResultsService } from '../results/results.service';
 
 export const REPORT_CREATED = 'REPORT_CREATED';
 
@@ -19,6 +20,7 @@ export class ReportService {
     private testModel: Model<TestDocument>,
     @InjectModel(QuestionEntity.name)
     private questionModel: Model<QuestionDocument>,
+    private resultsService: ResultsService,
     @Inject('PUB_SUB') private pubSub: PubSub,
   ) {}
 
@@ -50,12 +52,18 @@ export class ReportService {
   }
 
   async resolveReport(reportId: string): Promise<ReportDocument> {
-    const report = await this.reportModel.findByIdAndUpdate(
-      reportId,
-      { $set: { reportStatus: ReportStatus.RESOLVED } },
-      { new: true },
-    );
+    const report = await this.reportModel.findById(reportId);
     if (!report) throw new NotFoundException('Report not found');
+
+    // Talaba "qayta topshirishga ruxsat so'rash" reporti yuborgan bo'lsa,
+    // admin uni hal qilgani hamon eski urinish o'chiriladi va talaba darhol
+    // testni qayta topshira oladi — alohida amal talab qilinmaydi.
+    if (report.reportType === ReportType.TEST && report.reportReason === ReportReason.RETAKE_REQUEST && report.testId) {
+      await this.resultsService.resetAttempt(report.userId, report.testId);
+    }
+
+    report.reportStatus = ReportStatus.RESOLVED;
+    await report.save();
     return report;
   }
 
