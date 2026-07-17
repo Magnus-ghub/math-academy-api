@@ -231,6 +231,7 @@ type Mutation {
   deleteTest(testId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   loginWithEmail(email: String!, password: String!): AuthResponse!
+  refreshMyGroups: AuthResponse!
   rejectComment(commentId: String!): Comment!
   rejectReport(reportId: String!): Report!
   removeUserFromGroup(groupId: String!, userId: String!): Boolean!

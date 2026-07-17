@@ -468,6 +468,26 @@ export class AuthService {
     return true;
   }
 
+  // Guruhlar faqat login vaqtida hisoblanadi — foydalanuvchi kanalga
+  // qo'shilgach qayta to'liq login qilmasdan ham yangilay olishi uchun
+  // (profil sahifasidagi "Guruhlarni yangilash" tugmasi shu yerdan chaqiradi).
+  async refreshMyGroups(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+    if (!user.telegramId) {
+      throw new BadRequestException('Telegram hisobi ulanmagan');
+    }
+
+    const memberGroups = await this.checkTelegramGroups(user.telegramId);
+    const userGroups = await this.syncUserGroups(user, memberGroups);
+
+    return {
+      accessToken: this.generateToken(user, userGroups),
+      user,
+      groups: userGroups,
+    };
+  }
+
   async validateToken(token: string) {
     try {
       return this.jwtService.verify(token);

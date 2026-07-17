@@ -127,6 +127,12 @@ export class AuthResolver {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Mutation(() => AuthResponse)
+  async refreshMyGroups(@CurrentUser() currentUser: any) {
+    return this.authService.refreshMyGroups(currentUser.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Mutation(() => Boolean)
   async changePassword(
     @CurrentUser() currentUser: any,
