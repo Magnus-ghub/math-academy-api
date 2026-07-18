@@ -32,6 +32,12 @@ export class User {
   userAddress?: string;
 
   @Field(() => String, { nullable: true })
+  userRegion?: string;
+
+  @Field(() => String, { nullable: true })
+  userDistrict?: string;
+
+  @Field(() => String, { nullable: true })
   userDesc?: string;
 
   @Field({ nullable: true })

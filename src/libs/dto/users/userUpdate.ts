@@ -32,6 +32,16 @@ export class UserUpdate {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  userRegion?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  userDistrict?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   userDesc?: string;
 }
 
@@ -61,6 +71,16 @@ export class AdminUserUpdate {
   @IsOptional()
   @IsString()
   userAddress?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  userRegion?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  userDistrict?: string;
 
   @Field({ nullable: true })
   @IsOptional()

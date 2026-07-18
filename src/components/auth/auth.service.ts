@@ -226,6 +226,9 @@ export class AuthService {
     userLastName: string;
     examPrepType: TestType;
     teacherCategory?: TeacherCategory;
+    userPhone: string;
+    userRegion: string;
+    userDistrict: string;
   }): Promise<string> {
     let user = await this.userModel.findOne({ telegramId: data.telegramId });
 
@@ -239,12 +242,18 @@ export class AuthService {
         userStatus: UserStatus.ACTIVE,
         examPrepType: data.examPrepType,
         teacherCategory: data.teacherCategory ?? null,
+        userPhone: data.userPhone,
+        userRegion: data.userRegion,
+        userDistrict: data.userDistrict,
       });
     } else {
       user.userName = data.userName;
       user.userLastName = data.userLastName;
       user.examPrepType = data.examPrepType;
       user.teacherCategory = data.teacherCategory ?? null;
+      user.userPhone = data.userPhone;
+      user.userRegion = data.userRegion;
+      user.userDistrict = data.userDistrict;
       await user.save();
     }
 

@@ -8,10 +8,23 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../libs/enums/user.enum';
 import { User } from 'src/libs/dto/users/user';
 import { UserUpdate, AdminUserUpdate } from 'src/libs/dto/users/userUpdate';
+import { UzRegionType } from 'src/libs/dto/common/region';
+import { UZBEKISTAN_REGIONS } from 'src/libs/constants/uzbekistan-regions';
 
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private usersService: UsersService) {}
+
+  // Ro'yxatdan o'tishda bot ishlatadigan ro'yxat bilan bir xil manba —
+  // profil sahifasidagi viloyat/tuman select shu yerdan oladi.
+  @Query(() => [UzRegionType])
+  getUzbekistanRegions() {
+    return UZBEKISTAN_REGIONS.map((r) => ({
+      code: r.code,
+      name: r.name,
+      districts: r.districts.map((d) => d.name),
+    }));
+  }
 
   @UseGuards(JwtAuthGuard)
   @Query(() => User)

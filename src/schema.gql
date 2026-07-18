@@ -5,10 +5,12 @@
 input AdminUserUpdate {
   userAddress: String
   userDesc: String
+  userDistrict: String
   userImage: String
   userLastName: String
   userName: String
   userPhone: String
+  userRegion: String
   userRole: UserRole
   userStatus: UserStatus
 }
@@ -328,6 +330,7 @@ type Query {
   getTest(testId: String!): Test!
   getTestComments(testId: String!): [Comment!]!
   getTests: [Test!]!
+  getUzbekistanRegions: [UzRegionType!]!
   hello: String!
   searchUsers(search: String!): [User!]!
 }
@@ -583,11 +586,13 @@ type User {
   userAddress: String
   userAuthType: UserAuthType!
   userDesc: String
+  userDistrict: String
   userEmail: String
   userImage: String
   userLastName: String
   userName: String
   userPhone: String
+  userRegion: String
   userRole: UserRole!
   userStatus: UserStatus!
 }
@@ -625,8 +630,16 @@ enum UserStatus {
 input UserUpdate {
   userAddress: String
   userDesc: String
+  userDistrict: String
   userImage: String
   userLastName: String
   userName: String
   userPhone: String
+  userRegion: String
+}
+
+type UzRegionType {
+  code: String!
+  districts: [String!]!
+  name: String!
 }

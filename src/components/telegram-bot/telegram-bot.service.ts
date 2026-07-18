@@ -8,12 +8,22 @@ import { QrLoginService } from '../auth/qr-login.service';
 import { UserEntity, UserDocument } from 'src/schema/User.model';
 import { TeacherCategory } from 'src/libs/enums/user.enum';
 import { TestType } from 'src/libs/enums/test.enum';
+import { UZBEKISTAN_REGIONS, findRegionByCode } from 'src/libs/constants/uzbekistan-regions';
 
 interface RegisterWizardState {
   firstName?: string;
   lastName?: string;
   examPrepType?: TestType;
+  teacherCategory?: TeacherCategory;
+  userPhone?: string;
+  regionCode?: string;
+  region?: string;
+  district?: string;
 }
+
+// PHONE_STEP — telefon so'raladigan qadam indeksi, ATTESTATSIYA bo'lmagan
+// yo'nalishlarda toifa qadamini o'tkazib, to'g'ridan-to'g'ri shu qadamga sakraymiz.
+const PHONE_STEP = 5;
 
 type BotContext = Scenes.WizardContext;
 
@@ -174,8 +184,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           return ctx.wizard.next();
         }
 
-        const token = await this.finishRegistration(ctx, state);
-        return this.replySuccess(ctx, token);
+        await this.askPhone(ctx);
+        return ctx.wizard.selectStep(PHONE_STEP);
       },
       async (ctx) => {
         const data =
@@ -188,26 +198,130 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
         const teacherCategory = data.replace('toifa_', '') as TeacherCategory;
         const state = ctx.wizard.state as RegisterWizardState;
+        state.teacherCategory = teacherCategory;
         await ctx.answerCbQuery();
         await ctx.editMessageReplyMarkup(undefined);
 
-        const token = await this.finishRegistration(ctx, state, teacherCategory);
+        await this.askPhone(ctx);
+        return ctx.wizard.next();
+      },
+      async (ctx) => {
+        const state = ctx.wizard.state as RegisterWizardState;
+        let phone: string | null = null;
+
+        if (ctx.message && 'contact' in ctx.message && ctx.message.contact) {
+          phone = this.normalizeUzPhone(ctx.message.contact.phone_number);
+        } else if (ctx.message && 'text' in ctx.message) {
+          phone = this.normalizeUzPhone(ctx.message.text);
+        }
+
+        if (!phone) {
+          await ctx.reply(
+            "Telefon raqam noto'g'ri ko'rinmoqda. Pastdagi tugma orqali yuboring yoki +998 bilan yozing (masalan: +998901234567):",
+          );
+          return;
+        }
+
+        state.userPhone = phone;
+        await ctx.reply('Rahmat! ✅', Markup.removeKeyboard());
+        await ctx.reply(
+          'Qaysi viloyatdasiz?',
+          Markup.inlineKeyboard(
+            UZBEKISTAN_REGIONS.map((r) => Markup.button.callback(r.name, `reg_${r.code}`)),
+            { columns: 2 },
+          ),
+        );
+        return ctx.wizard.next();
+      },
+      async (ctx) => {
+        const data =
+          ctx.callbackQuery && 'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
+
+        const code = data?.startsWith('reg_') ? data.replace('reg_', '') : undefined;
+        const region = code ? findRegionByCode(code) : undefined;
+
+        if (!region) {
+          await ctx.reply('Iltimos, tugmalardan birini tanlang.');
+          return;
+        }
+
+        const state = ctx.wizard.state as RegisterWizardState;
+        state.regionCode = region.code;
+        state.region = region.name;
+        await ctx.answerCbQuery();
+        await ctx.editMessageReplyMarkup(undefined);
+
+        await ctx.reply(
+          'Qaysi tumandasiz?',
+          Markup.inlineKeyboard(
+            region.districts.map((d, i) =>
+              Markup.button.callback(d.name, `dist_${region.code}_${i}`),
+            ),
+            { columns: 2 },
+          ),
+        );
+        return ctx.wizard.next();
+      },
+      async (ctx) => {
+        const data =
+          ctx.callbackQuery && 'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
+        const state = ctx.wizard.state as RegisterWizardState;
+        const region = state.regionCode ? findRegionByCode(state.regionCode) : undefined;
+
+        const prefix = region ? `dist_${region.code}_` : undefined;
+        const index = data && prefix && data.startsWith(prefix)
+          ? Number(data.slice(prefix.length))
+          : NaN;
+        const district = region && !Number.isNaN(index) ? region.districts[index] : undefined;
+
+        if (!district) {
+          await ctx.reply('Iltimos, tugmalardan birini tanlang.');
+          return;
+        }
+
+        state.district = district.name;
+        await ctx.answerCbQuery();
+        await ctx.editMessageReplyMarkup(undefined);
+
+        const token = await this.finishRegistration(ctx, state);
         return this.replySuccess(ctx, token);
       },
     );
   }
 
+  private async askPhone(ctx: BotContext) {
+    await ctx.reply(
+      "Telefon raqamingizni yuboring 📞\n\nPastdagi tugmani bosing yoki +998 bilan qo'lda yozing:",
+      Markup.keyboard([Markup.button.contactRequest('📞 Raqamni yuborish')])
+        .resize()
+        .oneTime(),
+    );
+  }
+
+  private normalizeUzPhone(raw: string): string | null {
+    const digits = raw.replace(/[^\d]/g, '');
+    if (digits.startsWith('998') && digits.length === 12) {
+      return `+${digits}`;
+    }
+    if (digits.length === 9) {
+      return `+998${digits}`;
+    }
+    return null;
+  }
+
   private async finishRegistration(
     ctx: BotContext,
     state: RegisterWizardState,
-    teacherCategory?: TeacherCategory,
   ): Promise<string> {
     return this.authService.registerViaTelegramBot({
       telegramId: String(ctx.from!.id),
       userName: state.firstName!,
       userLastName: state.lastName!,
       examPrepType: state.examPrepType!,
-      teacherCategory,
+      teacherCategory: state.teacherCategory,
+      userPhone: state.userPhone!,
+      userRegion: state.region!,
+      userDistrict: state.district!,
     });
   }
 

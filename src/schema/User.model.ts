@@ -38,6 +38,12 @@ export class UserEntity {
   userAddress: string | null;
 
   @Prop({ type: String, default: null })
+  userRegion: string | null;
+
+  @Prop({ type: String, default: null })
+  userDistrict: string | null;
+
+  @Prop({ type: String, default: null })
   userDesc: string | null;
 
   @Prop({ type: String, default: null })
