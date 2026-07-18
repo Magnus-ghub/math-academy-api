@@ -10,6 +10,7 @@ import { ResultStatus } from '../../libs/enums/result.enum';
 import { TestType } from '../../libs/enums/test.enum';
 import { TeacherCategory } from '../../libs/enums/user.enum';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
+import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
 
 @Injectable()
 export class ResultsService {
@@ -198,6 +199,41 @@ export class ResultsService {
         correctAnswers: r.correctAnswers,
         totalQuestions: r.totalQuestions,
         duration: r.duration,
+      };
+    });
+  }
+
+  async getAllResultsForTest(testId: string): Promise<AdminResultRow[]> {
+    const results = await this.resultModel
+      .find({ testId })
+      .sort({ score: -1, duration: 1, createdAt: -1 });
+
+    if (results.length === 0) return [];
+
+    const userIds = [...new Set(results.map((r) => r.userId))];
+    const [users, test] = await Promise.all([
+      this.userModel.find({ _id: { $in: userIds } }),
+      this.testModel.findById(testId),
+    ]);
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return results.map((r) => {
+      const user = userMap.get(r.userId);
+      return {
+        id: r.id,
+        userId: r.userId,
+        testTitle: test?.testTitle ?? undefined,
+        userName: user?.userName ?? undefined,
+        userLastName: user?.userLastName ?? undefined,
+        userPhone: user?.userPhone ?? undefined,
+        userEmail: user?.userEmail ?? undefined,
+        resultStatus: r.resultStatus,
+        totalQuestions: r.totalQuestions,
+        correctAnswers: r.correctAnswers,
+        score: r.score,
+        duration: r.duration,
+        finishedAt: r.finishedAt ?? undefined,
+        createdAt: r.createdAt,
       };
     });
   }

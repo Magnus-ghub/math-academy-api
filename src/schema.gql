@@ -2,6 +2,23 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AdminResultRow {
+  correctAnswers: Int!
+  createdAt: DateTime!
+  duration: Int!
+  finishedAt: DateTime
+  id: ID!
+  resultStatus: ResultStatus!
+  score: Float!
+  testTitle: String
+  totalQuestions: Int!
+  userEmail: String
+  userId: String!
+  userLastName: String
+  userName: String
+  userPhone: String
+}
+
 input AdminUserUpdate {
   userAddress: String
   userDesc: String
@@ -301,6 +318,7 @@ type Query {
   getAllContent: [Content!]!
   getAllGroups: [Group!]!
   getAllPayments: [Payment!]!
+  getAllResultsForTest(testId: String!): [AdminResultRow!]!
   getAllTests: [Test!]!
   getAllUsers: [User!]!
   getBook: Content
