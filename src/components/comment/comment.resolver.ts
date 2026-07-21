@@ -42,6 +42,20 @@ export class CommentResolver {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @Query(() => [Comment])
+  async getAllComments() {
+    return this.commentService.getAllComments();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => Boolean)
+  async deleteComment(@Args('commentId') commentId: string) {
+    return this.commentService.deleteComment(commentId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Mutation(() => Comment)
   async approveComment(@Args('commentId') commentId: string) {
     return this.commentService.approveComment(commentId);

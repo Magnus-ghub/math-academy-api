@@ -176,6 +176,7 @@ export class UploadController {
     }
 
     let testId = body.testId;
+    let existingByOrder: Map<number, QuestionDocument> | null = null;
 
     // testId berilmagan bo'lsa yangi test yaratamiz
     if (!testId) {
@@ -194,17 +195,25 @@ export class UploadController {
       const existing = await this.testModel.findById(testId);
       if (!existing) throw new BadRequestException('Test topilmadi');
 
-      // Admin testni JSON orqali qayta yaratmoqchi bo'lsa (masalan, publish
-      // qilingan testni yangi savollar bilan almashtirish uchun) — eski
-      // savollarni o'chirib, yangilarini toza holda qo'shamiz.
+      // Admin testni JSON orqali qayta yuklamoqchi bo'lsa (masalan, xato
+      // topilgan savollarni tuzatish yoki AI tahlil qo'shish uchun) — eski
+      // savollarni o'chirib tashlamasdan, orderIndex bo'yicha mos keladigan
+      // savolni YANGILAYMIZ (o'sha _id saqlanib qoladi). Shunday qilib,
+      // talabalar avval topshirgan natijalarning javob tahlili buzilmaydi —
+      // ular hali ham o'sha savolga bog'lanib turadi. Yangi to'plamda ortiqcha
+      // (eskisidan ko'proq) savol bo'lsa, ular yangi hujjat sifatida
+      // qo'shiladi; eskisidan kamroq bo'lsa, ortiqcha eski savollar o'chadi.
       if (body.replace) {
-        await this.questionModel.deleteMany({ testId });
+        const existingQuestions = await this.questionModel.find({ testId });
+        existingByOrder = new Map(existingQuestions.map((q) => [q.orderIndex, q]));
       }
     }
 
     const uploadsDir = join(process.cwd(), 'uploads');
 
     let savedCount = 0;
+    const keptOrderIndexes = new Set<number>();
+
     for (let i = 0; i < body.questions.length; i++) {
       const q = body.questions[i];
       const isSpr = Array.isArray(q.options) && q.options.length === 0;
@@ -228,7 +237,8 @@ export class UploadController {
         imageUrl = q.questionImage;
       }
 
-      await this.questionModel.create({
+      const orderIndex = i + 1;
+      const payload = {
         testId,
         questionText: q.questionText,
         questionImage: imageUrl,
@@ -237,9 +247,27 @@ export class UploadController {
         explanation: q.explanation || undefined,
         youtubeUrl: q.youtubeUrl || undefined,
         analysis: q.analysis || undefined,
-        orderIndex: i + 1,
-      });
+        orderIndex,
+      };
+
+      const existingQuestion = existingByOrder?.get(orderIndex);
+      if (existingQuestion) {
+        await this.questionModel.updateOne({ _id: existingQuestion.id }, { $set: payload });
+        keptOrderIndexes.add(orderIndex);
+      } else {
+        await this.questionModel.create(payload);
+      }
       savedCount++;
+    }
+
+    // Yangi to'plamda ishlatilmagan (ortiqcha) eski savollarni o'chiramiz
+    if (existingByOrder) {
+      const staleIds = [...existingByOrder.entries()]
+        .filter(([orderIndex]) => !keptOrderIndexes.has(orderIndex))
+        .map(([, q]) => q.id);
+      if (staleIds.length > 0) {
+        await this.questionModel.deleteMany({ _id: { $in: staleIds } });
+      }
     }
 
     const testUpdate: Record<string, any> = { totalQuestions: savedCount };

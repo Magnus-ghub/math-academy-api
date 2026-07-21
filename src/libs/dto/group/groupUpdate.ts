@@ -14,6 +14,11 @@ export class GroupUpdate {
   @IsString()
   groupDesc?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  telegramChatId?: string;
+
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()

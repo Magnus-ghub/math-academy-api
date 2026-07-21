@@ -22,6 +22,12 @@ export class Comment {
   userId: string;
 
   @Field({ nullable: true })
+  userName?: string;
+
+  @Field({ nullable: true })
+  userImage?: string;
+
+  @Field({ nullable: true })
   testId?: string;
 
   @Field()

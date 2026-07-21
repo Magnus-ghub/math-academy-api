@@ -78,6 +78,8 @@ type Comment {
   testId: String
   text: String!
   userId: String!
+  userImage: String
+  userName: String
 }
 
 input CommentInput {
@@ -216,6 +218,7 @@ input GroupUpdate {
   groupDesc: String
   groupName: String
   groupStatus: GroupStatus
+  telegramChatId: String
 }
 
 type LeaderboardEntry {
@@ -250,6 +253,7 @@ type Mutation {
   createQrSession: String!
   createReport(input: ReportInput!): Report!
   createTest(input: TestInput!): Test!
+  deleteComment(commentId: String!): Boolean!
   deleteContent(contentId: String!): Boolean!
   deleteQuestion(questionId: String!): Boolean!
   deleteTest(testId: String!): Boolean!
@@ -320,6 +324,7 @@ type QrSessionStatus {
 type Query {
   checkMyAttempt(testId: String!): Result
   checkQrSession(sessionId: String!): QrSessionStatus!
+  getAllComments: [Comment!]!
   getAllContent: [Content!]!
   getAllGroups: [Group!]!
   getAllPayments: [Payment!]!
