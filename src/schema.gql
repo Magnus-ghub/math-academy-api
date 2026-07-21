@@ -229,6 +229,11 @@ type LeaderboardEntry {
   userName: String!
 }
 
+enum LeaderboardPeriod {
+  MONTH
+  WEEK
+}
+
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
@@ -348,6 +353,7 @@ type Query {
   getTest(testId: String!): Test!
   getTestComments(testId: String!): [Comment!]!
   getTests: [Test!]!
+  getTopStudents(period: LeaderboardPeriod! = WEEK): [TopStudentEntry!]!
   getUzbekistanRegions: [UzRegionType!]!
   hello: String!
   searchUsers(search: String!): [User!]!
@@ -589,6 +595,15 @@ input TestUpdate {
   testTitle: String
   testType: TestType
   testYoutubeUrl: String
+}
+
+type TopStudentEntry {
+  avgScore: Float!
+  rank: Int!
+  totalTests: Int!
+  userId: String!
+  userImage: String
+  userName: String!
 }
 
 type User {

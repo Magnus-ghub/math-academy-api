@@ -51,7 +51,11 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private qrLoginService: QrLoginService,
     @InjectModel(UserEntity.name) private userModel: Model<UserDocument>,
   ) {
-    this.bot = new Telegraf<BotContext>(configService.get<string>('TELEGRAM_BOT_TOKEN')!);
+    const botToken =
+      process.env.NODE_ENV === 'production'
+        ? configService.get<string>('TELEGRAM_BOT_TOKEN_PROD')
+        : configService.get<string>('TELEGRAM_BOT_TOKEN_DEV');
+    this.bot = new Telegraf<BotContext>(botToken!);
   }
 
   async onModuleInit() {

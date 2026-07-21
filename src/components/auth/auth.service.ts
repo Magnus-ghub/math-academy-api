@@ -29,6 +29,14 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
+  private getTelegramBotToken(): string {
+    return (
+      process.env.NODE_ENV === 'production'
+        ? this.config.get<string>('TELEGRAM_BOT_TOKEN_PROD')
+        : this.config.get<string>('TELEGRAM_BOT_TOKEN_DEV')
+    )!;
+  }
+
   private generateToken(user: UserDocument, groups: UserGroupDocument[]) {
     const payload = {
       userId: user.id,
@@ -70,10 +78,7 @@ export class AuthService {
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
 
-    const secretKey = crypto
-      .createHash('sha256')
-      .update(this.config.get<string>('TELEGRAM_BOT_TOKEN')!)
-      .digest();
+    const secretKey = crypto.createHash('sha256').update(this.getTelegramBotToken()).digest();
 
     const expectedHash = crypto
       .createHmac('sha256', secretKey)
@@ -85,7 +90,7 @@ export class AuthService {
 
   private async checkTelegramGroups(telegramId: string): Promise<GroupDocument[]> {
     const groups = await this.groupModel.find({ groupStatus: GroupStatus.ACTIVE });
-    const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
+    const botToken = this.getTelegramBotToken();
 
     // Guruhlar soni ko'p bo'lganda (10+) ketma-ket so'rov yuborish login'ni
     // sekinlashtiradi — shuning uchun barcha guruhlarni parallel tekshiramiz.

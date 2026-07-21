@@ -17,3 +17,9 @@ export enum LeaderboardType {
   GLOBAL = 'GLOBAL',  // hamma testlar bo'yicha
 }
 registerEnumType(LeaderboardType, { name: 'LeaderboardType' });
+
+export enum LeaderboardPeriod {
+  WEEK  = 'WEEK',   // so'nggi 7 kun
+  MONTH = 'MONTH',  // so'nggi 30 kun
+}
+registerEnumType(LeaderboardPeriod, { name: 'LeaderboardPeriod' });

@@ -4,12 +4,14 @@ import { ResultsService } from './results.service';
 import { Result } from '../../libs/dto/result/result';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
+import { TopStudentEntry } from '../../libs/dto/result/topStudent';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../../libs/enums/user.enum';
+import { LeaderboardPeriod } from '../../libs/enums/result.enum';
 
 @Resolver(() => Result)
 export class ResultsResolver {
@@ -48,6 +50,14 @@ export class ResultsResolver {
   @Query(() => [LeaderboardEntry])
   async getLeaderboard(@Args('testId') testId: string) {
     return this.resultsService.getLeaderboard(testId);
+  }
+
+  @Query(() => [TopStudentEntry])
+  async getTopStudents(
+    @Args('period', { type: () => LeaderboardPeriod, defaultValue: LeaderboardPeriod.WEEK })
+    period: LeaderboardPeriod,
+  ) {
+    return this.resultsService.getTopStudents(period);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

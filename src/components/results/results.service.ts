@@ -11,6 +11,8 @@ import { TestType } from '../../libs/enums/test.enum';
 import { TeacherCategory } from '../../libs/enums/user.enum';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
+import { TopStudentEntry } from '../../libs/dto/result/topStudent';
+import { LeaderboardPeriod } from '../../libs/enums/result.enum';
 
 @Injectable()
 export class ResultsService {
@@ -238,18 +240,39 @@ export class ResultsService {
     });
   }
 
-  async getGlobalLeaderboard(): Promise<any[]> {
+  async getTopStudents(period: LeaderboardPeriod): Promise<TopStudentEntry[]> {
+    const from = new Date();
+    if (period === LeaderboardPeriod.MONTH) {
+      from.setDate(from.getDate() - 30);
+    } else {
+      from.setDate(from.getDate() - 7);
+    }
+
     const rows = await this.resultModel.aggregate([
-      { $match: { resultStatus: ResultStatus.COMPLETED } },
+      { $match: { resultStatus: ResultStatus.COMPLETED, createdAt: { $gte: from } } },
       { $group: { _id: '$userId', avgScore: { $avg: '$score' }, totalTests: { $sum: 1 } } },
-      { $sort: { avgScore: -1 } },
+      { $sort: { avgScore: -1, totalTests: -1 } },
       { $limit: 20 },
     ]);
 
-    return rows.map((row) => ({
-      userId: row._id,
-      avgScore: row.avgScore,
-      totalTests: row.totalTests,
-    }));
+    if (rows.length === 0) return [];
+
+    const userIds = rows.map((row) => row._id);
+    const users = await this.userModel.find({ _id: { $in: userIds } });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return rows.map((row, i) => {
+      const user = userMap.get(row._id);
+      const parts = [user?.userName, user?.userLastName].filter(Boolean);
+      const userName = parts.length > 0 ? parts.join(' ') : 'Foydalanuvchi';
+      return {
+        rank: i + 1,
+        userId: row._id,
+        userName,
+        userImage: user?.userImage ?? undefined,
+        avgScore: row.avgScore,
+        totalTests: row.totalTests,
+      };
+    });
   }
 }
