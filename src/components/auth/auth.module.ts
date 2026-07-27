@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthResolver } from './ auth.resolver';
 import { QrLoginService } from './qr-login.service';
+import { RebindService } from './rebind.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { UserEntity, UserSchema } from 'src/schema/User.model';
@@ -33,7 +34,7 @@ import { AuthController } from './auth.controller';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, AuthResolver, QrLoginService, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, AuthResolver, QrLoginService, RebindService, JwtStrategy, GoogleStrategy],
   exports: [AuthService, QrLoginService, JwtModule],
 })
 export class AuthModule {}

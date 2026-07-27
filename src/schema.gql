@@ -241,6 +241,7 @@ type Mutation {
   addQuestion(input: QuestionInput!): Question!
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
   adminGenerateLoginLink(userId: String!): String!
+  adminGenerateRebindLink(userId: String!): String!
   adminUpdateUser(input: AdminUserUpdate!, userId: String!): User!
   approveComment(commentId: String!): Comment!
   changePassword(currentPassword: String, newPassword: String!): Boolean!

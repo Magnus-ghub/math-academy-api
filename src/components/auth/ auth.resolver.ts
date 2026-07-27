@@ -61,6 +61,13 @@ export class AuthResolver {
     return this.authService.adminGenerateLoginLink(userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => String)
+  async adminGenerateRebindLink(@Args('userId') userId: string) {
+    return this.authService.adminGenerateRebindLink(userId);
+  }
+
   @Mutation(() => AuthResponse)
   async telegramLogin(
     @Args('telegramId') telegramId: string,

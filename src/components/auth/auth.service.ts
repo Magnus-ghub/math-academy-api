@@ -12,9 +12,12 @@ import { UserGroupEntity, UserGroupDocument } from 'src/schema/User_Group.model'
 import { TeacherCategory, UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
 import { GroupStatus } from 'src/libs/enums/group.enum';
 import { TestType } from 'src/libs/enums/test.enum';
+import { RebindService } from './rebind.service';
 
 @Injectable()
 export class AuthService {
+  private botUsernameCache: string | null = null;
+
   constructor(
     @InjectModel(UserEntity.name)
     private userModel: Model<UserDocument>,
@@ -27,6 +30,7 @@ export class AuthService {
 
     private jwtService: JwtService,
     private config: ConfigService,
+    private rebindService: RebindService,
   ) {}
 
   private getTelegramBotToken(): string {
@@ -35,6 +39,14 @@ export class AuthService {
         ? this.config.get<string>('TELEGRAM_BOT_TOKEN_PROD')
         : this.config.get<string>('TELEGRAM_BOT_TOKEN_DEV')
     )!;
+  }
+
+  private async getBotUsername(): Promise<string> {
+    if (this.botUsernameCache) return this.botUsernameCache;
+    const res = await fetch(`https://api.telegram.org/bot${this.getTelegramBotToken()}/getMe`);
+    const data = await res.json();
+    this.botUsernameCache = data.result.username;
+    return this.botUsernameCache!;
   }
 
   private generateToken(user: UserDocument, groups: UserGroupDocument[]) {
@@ -311,6 +323,39 @@ export class AuthService {
     const token = this.generateBotSignupToken(user.telegramId);
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
     return `${frontendUrl}/telegram?token=${token}`;
+  }
+
+  // Telegram akkaunti o'chib ketgan (yoki yo'q) foydalanuvchi uchun — admin bu havolani
+  // beradi, user uni O'ZINING YANGI Telegram akkauntidan ochib botga /start bosadi,
+  // shunda telegramId eskisi o'rniga shu yangi akkauntga almashtiriladi.
+  async adminGenerateRebindLink(userId: string): Promise<string> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    const code = this.rebindService.create(user.id);
+    const botUsername = await this.getBotUsername();
+    return `https://t.me/${botUsername}?start=rebind_${code}`;
+  }
+
+  // Bot /start rebind_<code> qabul qilganda chaqiriladi — ctx.from.id orqali
+  // kelgan yangi telegramId ni shu kodga bog'langan userga yozadi
+  async confirmRebind(code: string, newTelegramId: string): Promise<UserDocument> {
+    const userId = this.rebindService.consume(code);
+    if (!userId) {
+      throw new BadRequestException('Havola muddati o\'tgan yoki noto\'g\'ri');
+    }
+
+    const conflictUser = await this.userModel.findOne({ telegramId: newTelegramId });
+    if (conflictUser && conflictUser.id !== userId) {
+      throw new BadRequestException('Bu Telegram akkaunt allaqachon boshqa foydalanuvchiga bog\'langan');
+    }
+
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    user.telegramId = newTelegramId;
+    await user.save();
+    return user;
   }
 
   // Google login/register — email saqlaydi, yangi foydalanuvchi bo'lsa isNewUser=true

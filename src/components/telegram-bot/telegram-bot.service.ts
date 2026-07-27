@@ -97,6 +97,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         return this.handleQrLogin(ctx, payload.slice(3));
       }
 
+      if (payload?.startsWith('rebind_')) {
+        return this.handleRebind(ctx, payload.slice('rebind_'.length));
+      }
+
       return ctx.reply(
         `Salom, ${ctx.from.first_name}! 👋\n\n🎯 *Saidxonov Academy Bot*\n\n` +
           `📝 /login — Platformaga kirish\n` +
@@ -357,6 +361,19 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
 
     return ctx.reply('✅ Tasdiqlandi! Kompyuteringizga qaytib, avtomatik kirasiz.');
+  }
+
+  private async handleRebind(ctx: BotContext, code: string) {
+    let user: UserDocument;
+    try {
+      user = await this.authService.confirmRebind(code, String(ctx.from!.id));
+    } catch (err) {
+      return ctx.reply(`❌ ${err instanceof Error ? err.message : 'Xatolik yuz berdi'}`);
+    }
+    return this.replyWithLoginLink(
+      ctx,
+      `✅ Hisobingiz ushbu Telegram akkauntga muvaffaqiyatli bog'landi, ${user.userName}!\n\nPlatformaga kirish:`,
+    );
   }
 
   private async handleLoginRequest(ctx: BotContext) {
