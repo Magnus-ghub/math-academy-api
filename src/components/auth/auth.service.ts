@@ -243,7 +243,7 @@ export class AuthService {
     userLastName: string;
     examPrepType: TestType;
     teacherCategory?: TeacherCategory;
-    userPhone: string;
+    userPhone?: string;
     userRegion: string;
     userDistrict: string;
   }): Promise<string> {
@@ -259,7 +259,7 @@ export class AuthService {
         userStatus: UserStatus.ACTIVE,
         examPrepType: data.examPrepType,
         teacherCategory: data.teacherCategory ?? null,
-        userPhone: data.userPhone,
+        userPhone: data.userPhone ?? null,
         userRegion: data.userRegion,
         userDistrict: data.userDistrict,
       });
@@ -268,7 +268,8 @@ export class AuthService {
       user.userLastName = data.userLastName;
       user.examPrepType = data.examPrepType;
       user.teacherCategory = data.teacherCategory ?? null;
-      user.userPhone = data.userPhone;
+      // Telefon bot orqali endi so'ralmaydi — mavjud qiymatni bo'sh bilan ustidan yozib yubormaslik uchun faqat berilgan bo'lsa yangilaymiz
+      if (data.userPhone) user.userPhone = data.userPhone;
       user.userRegion = data.userRegion;
       user.userDistrict = data.userDistrict;
       await user.save();

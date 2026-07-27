@@ -15,15 +15,16 @@ interface RegisterWizardState {
   lastName?: string;
   examPrepType?: TestType;
   teacherCategory?: TeacherCategory;
-  userPhone?: string;
   regionCode?: string;
   region?: string;
   district?: string;
 }
 
-// PHONE_STEP — telefon so'raladigan qadam indeksi, ATTESTATSIYA bo'lmagan
+// REGION_STEP — viloyat so'raladigan qadam indeksi, ATTESTATSIYA bo'lmagan
 // yo'nalishlarda toifa qadamini o'tkazib, to'g'ridan-to'g'ri shu qadamga sakraymiz.
-const PHONE_STEP = 5;
+// Telefon raqami endi bot orqali so'ralmaydi — foydalanuvchi buni keyinchalik
+// profil sahifasida (dashboard/profile) o'zi to'ldiradi, wizard qisqaroq bo'lishi uchun.
+const REGION_STEP = 5;
 
 type BotContext = Scenes.WizardContext;
 
@@ -124,7 +125,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       'register-wizard',
       async (ctx) => {
         await ctx.reply(
-          "👋 Xush kelibsiz! Saidxonov Academy'ga ro'yxatdan o'tish uchun bir necha savolga javob bering.\n\nIsmingiz nima?",
+          "👋 Xush kelibsiz! Saidxonov Academy'ga ro'yxatdan o'tish uchun bir necha savolga javob bering.\n\nIsmingiz nima?\nMisol uchun: Aziz",
         );
         return ctx.wizard.next();
       },
@@ -139,7 +140,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           return;
         }
         (ctx.wizard.state as RegisterWizardState).firstName = firstName;
-        await ctx.reply('Familiyangiz nima?');
+        await ctx.reply("Familiyangiz nima?\nMisol uchun: Aliyev");
         return ctx.wizard.next();
       },
       async (ctx) => {
@@ -192,8 +193,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           return ctx.wizard.next();
         }
 
-        await this.askPhone(ctx);
-        return ctx.wizard.selectStep(PHONE_STEP);
+        await this.askRegion(ctx);
+        return ctx.wizard.selectStep(REGION_STEP);
       },
       async (ctx) => {
         const data =
@@ -210,35 +211,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery();
         await ctx.editMessageReplyMarkup(undefined);
 
-        await this.askPhone(ctx);
-        return ctx.wizard.next();
-      },
-      async (ctx) => {
-        const state = ctx.wizard.state as RegisterWizardState;
-        let phone: string | null = null;
-
-        if (ctx.message && 'contact' in ctx.message && ctx.message.contact) {
-          phone = this.normalizeUzPhone(ctx.message.contact.phone_number);
-        } else if (ctx.message && 'text' in ctx.message) {
-          phone = this.normalizeUzPhone(ctx.message.text);
-        }
-
-        if (!phone) {
-          await ctx.reply(
-            "Telefon raqam noto'g'ri ko'rinmoqda. Pastdagi tugma orqali yuboring yoki +998 bilan yozing (masalan: +998901234567):",
-          );
-          return;
-        }
-
-        state.userPhone = phone;
-        await ctx.reply('Rahmat! ✅', Markup.removeKeyboard());
-        await ctx.reply(
-          'Qaysi viloyatdasiz?',
-          Markup.inlineKeyboard(
-            UZBEKISTAN_REGIONS.map((r) => Markup.button.callback(r.name, `reg_${r.code}`)),
-            { columns: 2 },
-          ),
-        );
+        await this.askRegion(ctx);
         return ctx.wizard.next();
       },
       async (ctx) => {
@@ -297,24 +270,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  private async askPhone(ctx: BotContext) {
+  private async askRegion(ctx: BotContext) {
     await ctx.reply(
-      "Telefon raqamingizni yuboring 📞\n\nPastdagi tugmani bosing yoki +998 bilan qo'lda yozing:",
-      Markup.keyboard([Markup.button.contactRequest('📞 Raqamni yuborish')])
-        .resize()
-        .oneTime(),
+      'Qaysi viloyatdasiz?',
+      Markup.inlineKeyboard(
+        UZBEKISTAN_REGIONS.map((r) => Markup.button.callback(r.name, `reg_${r.code}`)),
+        { columns: 2 },
+      ),
     );
-  }
-
-  private normalizeUzPhone(raw: string): string | null {
-    const digits = raw.replace(/[^\d]/g, '');
-    if (digits.startsWith('998') && digits.length === 12) {
-      return `+${digits}`;
-    }
-    if (digits.length === 9) {
-      return `+998${digits}`;
-    }
-    return null;
   }
 
   private async finishRegistration(
@@ -327,7 +290,6 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       userLastName: state.lastName!,
       examPrepType: state.examPrepType!,
       teacherCategory: state.teacherCategory,
-      userPhone: state.userPhone!,
       userRegion: state.region!,
       userDistrict: state.district!,
     });
