@@ -96,16 +96,20 @@ export class TestsService {
     return true;
   }
 
+  // Soft delete — test va savollar bazada saqlanib qoladi (talabalarning
+  // eski natijalari buzilmasligi uchun), faqat ARCHIVED holatga o'tkaziladi
+  // va admin ro'yxatida (getAllTests) hamda talaba ko'radigan ro'yxatlarda
+  // (getPublicTests, getGroupTests — testStatus: PUBLISHED filtri orqali)
+  // ko'rinmay qoladi.
   async deleteTest(testId: string): Promise<boolean> {
     const test = await this.testModel.findById(testId);
     if (!test) throw new NotFoundException('Test not found');
-    await this.questionModel.deleteMany({ testId });
-    await this.testModel.deleteOne({ _id: testId });
+    await this.testModel.updateOne({ _id: testId }, { $set: { testStatus: TestStatus.ARCHIVED } });
     return true;
   }
 
   // Admin
   async getAllTests(): Promise<TestDocument[]> {
-    return this.testModel.find().sort({ createdAt: -1 });
+    return this.testModel.find({ testStatus: { $ne: TestStatus.ARCHIVED } }).sort({ createdAt: -1 });
   }
 }
