@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { join } from 'path';
+import * as fs from 'fs';
 import * as express from 'express';
 import { setDefaultResultOrder } from 'dns';
 import { setDefaultAutoSelectFamily } from 'net';
@@ -21,7 +22,13 @@ async function bootstrap() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
+  // uploads/ .gitignore qilingan — server'da git clone/pull qilinganda mavjud
+  // bo'lmasligi mumkin, shunday holatda multer diskStorage yozishga urinib xato
+  // beradi (fayl yuklash "server ishlamayapti"dek ko'rinadi). Har ehtimolga
+  // qarshi ishga tushishda o'zi yaratib qo'yamiz.
+  const uploadsDir = join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
 
   app.useGlobalPipes(
     new ValidationPipe({
