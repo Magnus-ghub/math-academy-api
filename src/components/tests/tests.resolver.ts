@@ -44,7 +44,7 @@ export class TestsResolver {
     @Args('testId') testId: string,
     @CurrentUser() user: any,
   ) {
-    return this.testsService.getTestWithAccess(testId, user.userId);
+    return this.testsService.getTestWithAccess(testId, user.userId, user.userRole);
   }
 
   // TEACHER + ADMIN
@@ -77,8 +77,8 @@ export class TestsResolver {
 
   @UseGuards(JwtAuthGuard)
   @Query(() => [Question])
-  async getQuestions(@Args('testId') testId: string) {
-    return this.testsService.getQuestionsByTest(testId);
+  async getQuestions(@Args('testId') testId: string, @CurrentUser() user: any) {
+    return this.testsService.getQuestionsByTest(testId, user.userId, user.userRole);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -325,6 +325,32 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     return ctx.reply('✅ Tasdiqlandi! Kompyuteringizga qaytib, avtomatik kirasiz.');
   }
 
+  // Report (e'tiroz) admin tomonidan hal/rad etilganda talabaga xabar yuborish
+  // uchun — report.service.ts shu metodni chaqiradi.
+  async notifyUser(telegramId: string, message: string) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    const url = frontendUrl ? `${frontendUrl}/dashboard/reports` : undefined;
+    const buttonUrl = url?.replace('://localhost', '://127.0.0.1');
+    const canUseButton = buttonUrl && (buttonUrl.startsWith('https://') || buttonUrl.includes('://127.0.0.1'));
+
+    try {
+      await this.bot.telegram.sendMessage(
+        telegramId,
+        message,
+        {
+          parse_mode: 'HTML',
+          ...(canUseButton
+            ? { reply_markup: Markup.inlineKeyboard([Markup.button.url("📋 Mening e'tirozlarim", buttonUrl!)]).reply_markup }
+            : {}),
+        },
+      );
+    } catch (err) {
+      // User botni bloklagan yoki /start bosmagan bo'lishi mumkin — bu
+      // ilovaning boshqa qismini to'xtatmasligi kerak
+      console.error(`Telegram xabar yuborilmadi (telegramId=${telegramId}):`, err);
+    }
+  }
+
   private async handleRebind(ctx: BotContext, code: string) {
     let user: UserDocument;
     try {

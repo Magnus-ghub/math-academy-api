@@ -12,5 +12,6 @@ import { UserEntity, UserSchema } from 'src/schema/User.model';
     MongooseModule.forFeature([{ name: UserEntity.name, schema: UserSchema }]),
   ],
   providers: [TelegramBotService],
+  exports: [TelegramBotService],
 })
 export class TelegramBotModule {}

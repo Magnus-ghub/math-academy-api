@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ResultEntity, ResultDocument } from '../../schema/Result.model';
@@ -7,8 +7,8 @@ import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
 import { UserEntity, UserDocument } from '../../schema/User.model';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { ResultStatus } from '../../libs/enums/result.enum';
-import { TestType } from '../../libs/enums/test.enum';
-import { TeacherCategory } from '../../libs/enums/user.enum';
+import { TestStatus, TestType } from '../../libs/enums/test.enum';
+import { TeacherCategory, UserRole } from '../../libs/enums/user.enum';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
 import { TopStudentEntry } from '../../libs/dto/result/topStudent';
@@ -30,9 +30,20 @@ export class ResultsService {
     private userModel: Model<UserDocument>,
   ) {}
 
-  async submitTest(userId: string, input: ResultInput): Promise<ResultDocument> {
+  async submitTest(userId: string, input: ResultInput, userRole?: string): Promise<ResultDocument> {
     const test = await this.testModel.findById(input.testId);
     if (!test) throw new NotFoundException('Test not found');
+
+    // Preview qilayotgan ADMIN/TEACHER bundan mustasno — qolganlar hali
+    // nashr etilmagan (DRAFT/ARCHIVED) testni to'g'ridan-to'g'ri mutation
+    // orqali (sahifadan chetlab) topshira olmasin.
+    if (
+      test.testStatus !== TestStatus.PUBLISHED &&
+      userRole !== UserRole.ADMIN &&
+      userRole !== UserRole.TEACHER
+    ) {
+      throw new ForbiddenException('Bu test hali nashr etilmagan');
+    }
 
     const existing = await this.resultModel.findOne({
       userId,

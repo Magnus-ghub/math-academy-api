@@ -28,6 +28,12 @@ export class Report {
   testId?: string;
 
   @Field({ nullable: true })
+  adminReply?: string;
+
+  @Field()
+  studentSeen: boolean;
+
+  @Field({ nullable: true })
   testTitle?: string;
 
   @Field(() => Int, { nullable: true })

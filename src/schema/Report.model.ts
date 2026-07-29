@@ -32,6 +32,15 @@ export class ReportEntity {
   @Prop({ type: String, default: null })
   testId: string | null;
 
+  @Prop({ type: String, default: null })
+  adminReply: string | null;
+
+  // Talaba yuborgan paytda ko'rishga hojat yo'q (o'zi yuborgan) — admin hal/rad
+  // etganda false qilinadi, talaba "Mening e'tirozlarim" sahifasini ochsa true
+  // qaytariladi. Header'dagi bildirishnoma raqami shunga qarab hisoblanadi.
+  @Prop({ type: Boolean, default: true })
+  studentSeen: boolean;
+
   createdAt: Date;
 }
 

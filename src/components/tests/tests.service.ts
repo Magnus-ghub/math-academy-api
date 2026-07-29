@@ -8,6 +8,7 @@ import { TestInput } from '../../libs/dto/test/testInput';
 import { TestUpdate } from '../../libs/dto/test/testUpdate';
 import { QuestionInput } from '../../libs/dto/question/questionInput';
 import { TestAccess, TestStatus } from '../../libs/enums/test.enum';
+import { UserRole } from '../../libs/enums/user.enum';
 
 @Injectable()
 export class TestsService {
@@ -37,9 +38,18 @@ export class TestsService {
     return test;
   }
 
-  // Access tekshiruvi
-  async getTestWithAccess(testId: string, userId: string): Promise<TestDocument> {
+  // Access tekshiruvi — TEACHER/ADMIN uchun to'liq bypass, shu orqali admin
+  // panelidagi "Ko'rish (Preview)" tugmasi hali PUBLISH qilinmagan (DRAFT)
+  // yoki guruh/premium cheklovidagi testni ham talaba ko'radigan xuddi shu
+  // sahifada, hech kimga ko'rinmasdan turib ko'ra oladi.
+  async getTestWithAccess(testId: string, userId: string, userRole?: string): Promise<TestDocument> {
     const test = await this.getTestById(testId);
+
+    if (userRole === UserRole.ADMIN || userRole === UserRole.TEACHER) return test;
+
+    if (test.testStatus !== TestStatus.PUBLISHED) {
+      throw new ForbiddenException('Bu test hali nashr etilmagan');
+    }
 
     if (test.testAccess === TestAccess.PUBLIC) return test;
 
@@ -78,7 +88,8 @@ export class TestsService {
     return question;
   }
 
-  async getQuestionsByTest(testId: string): Promise<QuestionDocument[]> {
+  async getQuestionsByTest(testId: string, userId: string, userRole?: string): Promise<QuestionDocument[]> {
+    await this.getTestWithAccess(testId, userId, userRole);
     return this.questionModel.find({ testId }).sort({ orderIndex: 1 });
   }
 

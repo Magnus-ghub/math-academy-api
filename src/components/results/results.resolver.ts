@@ -23,7 +23,7 @@ export class ResultsResolver {
     @CurrentUser() user: any,
     @Args('input') input: ResultInput,
   ) {
-    return this.resultsService.submitTest(user.userId, input);
+    return this.resultsService.submitTest(user.userId, input, user.userRole);
   }
 
   @UseGuards(JwtAuthGuard)

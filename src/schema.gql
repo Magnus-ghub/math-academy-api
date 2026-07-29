@@ -260,14 +260,15 @@ type Mutation {
   deleteTest(testId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   loginWithEmail(email: String!, password: String!): AuthResponse!
+  markReportsSeen: Boolean!
   refreshMyGroups: AuthResponse!
   rejectComment(commentId: String!): Comment!
-  rejectReport(reportId: String!): Report!
+  rejectReport(adminReply: String, reportId: String!): Report!
   removeUserFromGroup(groupId: String!, userId: String!): Boolean!
   requestPasswordReset(email: String!): Boolean!
   resetPassword(newPassword: String!, token: String!): Boolean!
   resolveRecoveryRequest(id: String!): RecoveryRequest!
-  resolveReport(reportId: String!): Report!
+  resolveReport(adminReply: String, reportId: String!): Report!
   setGooglePassword(password: String!, userId: String!): Boolean!
   submitRecoveryRequest(input: RecoveryRequestInput!): Boolean!
   submitTest(input: ResultInput!): Result!
@@ -345,6 +346,7 @@ type Query {
   getMe: User!
   getMyGroups: [UserGroup!]!
   getMyPayments: [Payment!]!
+  getMyReports: [Report!]!
   getMyResults: [Result!]!
   getPendingComments: [Comment!]!
   getPendingPayments: [Payment!]!
@@ -360,6 +362,7 @@ type Query {
   getTestComments(testId: String!): [Comment!]!
   getTests: [Test!]!
   getTopStudents(period: LeaderboardPeriod! = WEEK): [TopStudentEntry!]!
+  getUnseenReportsCount: Int!
   getUzbekistanRegions: [UzRegionType!]!
   hello: String!
   searchUsers(search: String!): [User!]!
@@ -434,6 +437,7 @@ enum RecoveryStatus {
 }
 
 type Report {
+  adminReply: String
   createdAt: DateTime!
   id: ID!
   questionId: String
@@ -442,6 +446,7 @@ type Report {
   reportStatus: ReportStatus!
   reportText: String
   reportType: ReportType!
+  studentSeen: Boolean!
   testId: String
   testTitle: String
   userId: String!

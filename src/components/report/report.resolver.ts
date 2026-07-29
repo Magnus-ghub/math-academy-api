@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Subscription } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Subscription, Int } from '@nestjs/graphql';
 import { UseGuards, Inject } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 import { ReportService, REPORT_CREATED } from './report.service';
@@ -33,18 +33,42 @@ export class ReportResolver {
     return this.reportService.getPendingReports();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Mutation(() => Report)
-  async resolveReport(@Args('reportId') reportId: string) {
-    return this.reportService.resolveReport(reportId);
+  @UseGuards(JwtAuthGuard)
+  @Query(() => [Report])
+  async getMyReports(@CurrentUser() user: any) {
+    return this.reportService.getMyReports(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => Int)
+  async getUnseenReportsCount(@CurrentUser() user: any) {
+    return this.reportService.getUnseenReportsCount(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => Boolean)
+  async markReportsSeen(@CurrentUser() user: any) {
+    return this.reportService.markReportsSeen(user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Mutation(() => Report)
-  async rejectReport(@Args('reportId') reportId: string) {
-    return this.reportService.rejectReport(reportId);
+  async resolveReport(
+    @Args('reportId') reportId: string,
+    @Args('adminReply', { nullable: true }) adminReply?: string,
+  ) {
+    return this.reportService.resolveReport(reportId, adminReply);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => Report)
+  async rejectReport(
+    @Args('reportId') reportId: string,
+    @Args('adminReply', { nullable: true }) adminReply?: string,
+  ) {
+    return this.reportService.rejectReport(reportId, adminReply);
   }
 
   @Subscription(() => Report, { name: 'reportCreated' })
