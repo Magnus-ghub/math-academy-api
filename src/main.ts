@@ -43,8 +43,8 @@ async function bootstrap() {
         return callback(null, true);
       }
       const allowed = [
-        'https://saidxonov.academy',
-        'https://www.saidxonov.academy',
+        'https://saidxonovacademy.uz',
+        'https://www.saidxonovacademy.uz',
         process.env.FRONTEND_URL,
       ].filter(Boolean);
       if (allowed.includes(origin)) {
