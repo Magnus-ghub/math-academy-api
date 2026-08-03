@@ -5,6 +5,7 @@ import { TestsResolver } from './tests.resolver';
 import { TestEntity, TestSchema } from '../../schema/Test.model';
 import { QuestionEntity, QuestionSchema } from '../../schema/Question.model';
 import { UserGroupEntity, UserGroupSchema } from '../../schema/User_Group.model';
+import { ResultEntity, ResultSchema } from '../../schema/Result.model';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { UserGroupEntity, UserGroupSchema } from '../../schema/User_Group.model'
       { name: TestEntity.name, schema: TestSchema },
       { name: QuestionEntity.name, schema: QuestionSchema },
       { name: UserGroupEntity.name, schema: UserGroupSchema },
+      { name: ResultEntity.name, schema: ResultSchema },
     ]),
   ],
   providers: [TestsService, TestsResolver],

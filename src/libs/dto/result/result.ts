@@ -66,6 +66,9 @@ export class Result {
   @Field(() => Float)
   score: number;          // foizda, masalan 85.5
 
+  @Field(() => Int, { nullable: true })
+  satScore?: number | null; // faqat SAT testlarida — 200-800 shkalalangan Math balli
+
   @Field(() => Int)
   duration: number;       // necha soniyada tugatgan
 

@@ -24,8 +24,10 @@ export class Question {
   @Field(() => [String])
   options: string[]; // A, B, C, D variantlar
 
-  @Field(() => Int)
-  correctAnswer: number; // 0, 1, 2, 3 (index)
+  // Talaba hali testni tugatmagan bo'lsa null qaytadi (getQuestionsByTest) —
+  // javob kaliti imtihon paytida clientga sizib chiqmasligi uchun.
+  @Field(() => Int, { nullable: true })
+  correctAnswer?: number | null; // 0, 1, 2, 3 (index)
 
   @Field({ nullable: true })
   explanation?: string;

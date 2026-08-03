@@ -13,6 +13,7 @@ import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
 import { TopStudentEntry } from '../../libs/dto/result/topStudent';
 import { LeaderboardPeriod } from '../../libs/enums/result.enum';
+import { getSatMathScaledScore } from '../../libs/constants/sat-scoring.constant';
 
 @Injectable()
 export class ResultsService {
@@ -69,6 +70,8 @@ export class ResultsService {
     });
 
     const score = (correctAnswers / questions.length) * 100;
+    const satScore =
+      test.testType === TestType.SAT ? getSatMathScaledScore(correctAnswers, questions.length) : null;
 
     await this.testModel.updateOne({ _id: input.testId }, { $inc: { totalAttempts: 1 } });
 
@@ -79,6 +82,7 @@ export class ResultsService {
       totalQuestions: questions.length,
       correctAnswers,
       score,
+      satScore,
       duration: input.duration,
       answers,
       resultStatus: ResultStatus.COMPLETED,

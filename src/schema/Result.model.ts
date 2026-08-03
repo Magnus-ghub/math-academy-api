@@ -49,6 +49,11 @@ export class ResultEntity {
   @Prop({ type: Number, default: 0 })
   score: number;
 
+  // Faqat SAT turidagi testlar uchun — 200-800 shkalalangan Math balli.
+  // Boshqa test turlarida null bo'lib qoladi.
+  @Prop({ type: Number, default: null })
+  satScore: number | null;
+
   @Prop({ type: Number, default: 0 })
   duration: number;
 

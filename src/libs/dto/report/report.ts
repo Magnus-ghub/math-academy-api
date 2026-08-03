@@ -22,6 +22,12 @@ export class Report {
   userId: string;
 
   @Field({ nullable: true })
+  userName?: string;
+
+  @Field({ nullable: true })
+  userLastName?: string;
+
+  @Field({ nullable: true })
   questionId?: string;
 
   @Field({ nullable: true })

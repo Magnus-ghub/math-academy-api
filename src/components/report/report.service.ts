@@ -58,20 +58,28 @@ export class ReportService {
   private async enrichReports(reports: ReportDocument[]): Promise<any[]> {
     const testIds = [...new Set(reports.map((r) => r.testId).filter(Boolean))];
     const questionIds = [...new Set(reports.map((r) => r.questionId).filter(Boolean))];
+    const userIds = [...new Set(reports.map((r) => r.userId).filter(Boolean))];
 
-    const [tests, questions] = await Promise.all([
+    const [tests, questions, users] = await Promise.all([
       testIds.length ? this.testModel.find({ _id: { $in: testIds } }) : [],
       questionIds.length ? this.questionModel.find({ _id: { $in: questionIds } }) : [],
+      userIds.length ? this.userModel.find({ _id: { $in: userIds } }) : [],
     ]);
 
     const testMap = new Map<string, string>(tests.map((t) => [t.id, t.testTitle] as [string, string]));
     const questionMap = new Map<string, number>(questions.map((q) => [q.id, q.orderIndex] as [string, number]));
+    const userMap = new Map<string, UserDocument>(users.map((u) => [u.id, u] as [string, UserDocument]));
 
-    return reports.map((r) => ({
-      ...r.toObject(),
-      testTitle: r.testId ? testMap.get(r.testId) ?? null : null,
-      questionOrder: r.questionId ? (questionMap.get(r.questionId) ?? null) : null,
-    }));
+    return reports.map((r) => {
+      const user = userMap.get(r.userId);
+      return {
+        ...r.toObject(),
+        testTitle: r.testId ? testMap.get(r.testId) ?? null : null,
+        questionOrder: r.questionId ? (questionMap.get(r.questionId) ?? null) : null,
+        userName: user?.userName ?? null,
+        userLastName: user?.userLastName ?? null,
+      };
+    });
   }
 
   async resolveReport(reportId: string, adminReply?: string): Promise<ReportDocument> {

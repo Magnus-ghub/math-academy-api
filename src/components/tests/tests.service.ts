@@ -4,11 +4,13 @@ import { Model } from 'mongoose';
 import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
 import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.model';
+import { ResultEntity, ResultDocument } from '../../schema/Result.model';
 import { TestInput } from '../../libs/dto/test/testInput';
 import { TestUpdate } from '../../libs/dto/test/testUpdate';
 import { QuestionInput } from '../../libs/dto/question/questionInput';
 import { TestAccess, TestStatus } from '../../libs/enums/test.enum';
 import { UserRole } from '../../libs/enums/user.enum';
+import { ResultStatus } from '../../libs/enums/result.enum';
 
 @Injectable()
 export class TestsService {
@@ -21,6 +23,9 @@ export class TestsService {
 
     @InjectModel(UserGroupEntity.name)
     private userGroupModel: Model<UserGroupDocument>,
+
+    @InjectModel(ResultEntity.name)
+    private resultModel: Model<ResultDocument>,
   ) {}
 
   async createTest(input: TestInput, createdBy: string): Promise<TestDocument> {
@@ -88,9 +93,30 @@ export class TestsService {
     return question;
   }
 
-  async getQuestionsByTest(testId: string, userId: string, userRole?: string): Promise<QuestionDocument[]> {
+  // Javob kaliti (correctAnswer, explanation) faqat ADMIN/TEACHER'ga yoki
+  // testni allaqachon COMPLETED holatda topshirgan talabaga (natijani ko'rish
+  // sahifasi) qaytariladi — hali imtihon topshirilmagan bo'lsa, bu maydonlar
+  // client'ga (Network tab/Apollo cache orqali) sizib chiqmasligi uchun
+  // olib tashlanadi.
+  async getQuestionsByTest(testId: string, userId: string, userRole?: string): Promise<any[]> {
     await this.getTestWithAccess(testId, userId, userRole);
-    return this.questionModel.find({ testId }).sort({ orderIndex: 1 });
+    const questions = await this.questionModel.find({ testId }).sort({ orderIndex: 1 });
+
+    if (userRole === UserRole.ADMIN || userRole === UserRole.TEACHER) return questions;
+
+    const hasCompleted = await this.resultModel.exists({
+      userId,
+      testId,
+      resultStatus: ResultStatus.COMPLETED,
+    });
+    if (hasCompleted) return questions;
+
+    return questions.map((q) => {
+      const obj: any = q.toObject();
+      obj.correctAnswer = null;
+      obj.explanation = null;
+      return obj;
+    });
   }
 
   async updateQuestion(questionId: string, input: any): Promise<QuestionDocument> {

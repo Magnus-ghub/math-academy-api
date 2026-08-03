@@ -370,7 +370,7 @@ type Query {
 
 type Question {
   analysis: String
-  correctAnswer: Int!
+  correctAnswer: Int
   createdAt: DateTime!
   explanation: String
   id: ID!
@@ -450,6 +450,8 @@ type Report {
   testId: String
   testTitle: String
   userId: String!
+  userLastName: String
+  userName: String
 }
 
 input ReportInput {
@@ -491,6 +493,7 @@ type Result {
   groupId: String
   id: ID!
   resultStatus: ResultStatus!
+  satScore: Int
   score: Float!
   testId: String!
   testTitle: String
