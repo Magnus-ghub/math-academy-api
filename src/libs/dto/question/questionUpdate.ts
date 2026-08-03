@@ -25,6 +25,12 @@ export class QuestionUpdate {
   @Max(3)
   correctAnswer?: number;
 
+  // Faqat TWO_PART turida ishlatiladi (Milliy Sertifikat) — ikkinchi mustaqil javob
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  correctAnswerB?: number;
+
   @Field({ nullable: true })
   @IsOptional()
   @IsString()

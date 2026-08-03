@@ -10,8 +10,15 @@ export class ResultAnswer {
   @Prop({ type: Number, required: true })
   selectedAnswer: number;
 
+  // Faqat TWO_PART turida (Milliy Sertifikat) — ikkinchi mustaqil javob
+  @Prop({ type: Number, default: null })
+  selectedAnswerB: number | null;
+
   @Prop({ type: Boolean, required: true })
   isCorrect: boolean;
+
+  @Prop({ type: Boolean, default: null })
+  isCorrectB: boolean | null;
 
   @Prop({ type: Number, required: true })
   timeSpent: number;
@@ -53,6 +60,15 @@ export class ResultEntity {
   // Boshqa test turlarida null bo'lib qoladi.
   @Prop({ type: Number, default: null })
   satScore: number | null;
+
+  // Faqat MILLIY_SERTIFIKAT turida — Rasch hisob-kitobi uchun xom ball va
+  // shu urinishdagi maksimal ball (topshirish vaqtida "suratga olinadi",
+  // testning savollari keyinchalik o'zgarsa ham bu qiymatlar o'zgarmaydi).
+  @Prop({ type: Number, default: null })
+  rawPoints: number | null;
+
+  @Prop({ type: Number, default: null })
+  totalPoints: number | null;
 
   @Prop({ type: Number, default: 0 })
   duration: number;

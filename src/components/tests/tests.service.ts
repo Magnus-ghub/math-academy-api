@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Cron } from '@nestjs/schedule';
 import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
 import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.model';
@@ -114,6 +115,7 @@ export class TestsService {
     return questions.map((q) => {
       const obj: any = q.toObject();
       obj.correctAnswer = null;
+      obj.correctAnswerB = null;
       obj.explanation = null;
       return obj;
     });
@@ -146,7 +148,22 @@ export class TestsService {
   }
 
   // Admin
-  async getAllTests(): Promise<TestDocument[]> {
-    return this.testModel.find({ testStatus: { $ne: TestStatus.ARCHIVED } }).sort({ createdAt: -1 });
+  async getAllTests(includeArchived?: boolean): Promise<TestDocument[]> {
+    const filter = includeArchived ? {} : { testStatus: { $ne: TestStatus.ARCHIVED } };
+    return this.testModel.find(filter).sort({ createdAt: -1 });
+  }
+
+  // Muddati (closesAt) o'tgan testlarni har kecha avtomatik yopish (ARCHIVED) —
+  // shundan keyin yangi urinish qabul qilinmaydi, kohorta o'sishi to'xtaydi.
+  @Cron('0 0 * * *')
+  async closeExpiredTests() {
+    const result = await this.testModel.updateMany(
+      { closesAt: { $lt: new Date() }, testStatus: { $ne: TestStatus.ARCHIVED } },
+      { $set: { testStatus: TestStatus.ARCHIVED } },
+    );
+
+    if (result.modifiedCount > 0) {
+      console.log(`Auto-archived ${result.modifiedCount} tests past closesAt`);
+    }
   }
 }

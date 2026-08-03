@@ -5,6 +5,7 @@ import { Result } from '../../libs/dto/result/result';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
 import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
 import { TopStudentEntry } from '../../libs/dto/result/topStudent';
+import { MilliySertifikatScoreResult } from '../../libs/dto/result/milliySertifikatScore';
 import { ResultInput } from '../../libs/dto/result/resultInput';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -65,5 +66,14 @@ export class ResultsResolver {
   @Query(() => [AdminResultRow])
   async getAllResultsForTest(@Args('testId') testId: string) {
     return this.resultsService.getAllResultsForTest(testId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => MilliySertifikatScoreResult)
+  async getMilliySertifikatScore(
+    @CurrentUser() user: any,
+    @Args('resultId') resultId: string,
+  ) {
+    return this.resultsService.getMilliySertifikatScore(resultId, user.userId, user.userRole);
   }
 }

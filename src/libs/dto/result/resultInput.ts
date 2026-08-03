@@ -1,5 +1,5 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsString, IsInt, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsInt, IsArray, IsBoolean, IsOptional } from 'class-validator';
 
 @InputType()
 export class AnswerInput {
@@ -10,6 +10,12 @@ export class AnswerInput {
   @Field(() => Int)
   @IsInt()
   selectedAnswer: number;
+
+  // Faqat TWO_PART turidagi savollarda (Milliy Sertifikat) — ikkinchi javob
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  selectedAnswerB?: number;
 
   @Field(() => Int)
   @IsInt()

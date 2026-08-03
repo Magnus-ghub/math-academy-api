@@ -57,4 +57,9 @@ export class TestInput {
   @IsInt()
   @IsPositive()
   testPrice?: number;
+
+  // null/berilmasa = doimiy ochiq. Berilsa, shu sanadan keyin test avtomatik yopiladi.
+  @Field({ nullable: true })
+  @IsOptional()
+  closesAt?: Date;
 }

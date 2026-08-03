@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ResultEntity, ResultDocument } from '../../schema/Result.model';
@@ -14,6 +14,13 @@ import { AdminResultRow } from '../../libs/dto/result/adminResultRow';
 import { TopStudentEntry } from '../../libs/dto/result/topStudent';
 import { LeaderboardPeriod } from '../../libs/enums/result.enum';
 import { getSatMathScaledScore } from '../../libs/constants/sat-scoring.constant';
+import {
+  MILLIY_SERTIFIKAT_MIN_RESPONDENTS,
+  computeLogit,
+  computeCohortStats,
+  getMilliySertifikatGrade,
+} from '../../libs/constants/rasch-scoring.constant';
+import { QuestionType } from '../../libs/enums/question.enum';
 
 @Injectable()
 export class ResultsService {
@@ -55,12 +62,36 @@ export class ResultsService {
 
     const questions = await this.questionModel.find({ testId: input.testId });
 
-    // Javoblarni tekshirish
+    // Javoblarni tekshirish. TWO_PART turidagi savollarda (Milliy Sertifikat)
+    // ikkita mustaqil javob (a, b) bor, har biri 1 balldan — shu sabab
+    // "to'g'ri javoblar soni" (har savol 1 ball) dan tashqari "xom ball"
+    // (rawPoints, har item 1 ball) alohida hisoblanadi.
     let correctAnswers = 0;
+    let rawPoints = 0;
     const answers = input.answers.map((answer) => {
       const question = questions.find((q) => q.id === answer.questionId);
+
+      if (question?.questionType === QuestionType.TWO_PART) {
+        const isCorrect = question.correctAnswer === answer.selectedAnswer;
+        const isCorrectB =
+          question.correctAnswerB != null && question.correctAnswerB === answer.selectedAnswerB;
+        rawPoints += (isCorrect ? 1 : 0) + (isCorrectB ? 1 : 0);
+        if (isCorrect && isCorrectB) correctAnswers++;
+        return {
+          questionId: answer.questionId,
+          selectedAnswer: answer.selectedAnswer,
+          selectedAnswerB: answer.selectedAnswerB ?? null,
+          isCorrect,
+          isCorrectB,
+          timeSpent: answer.timeSpent,
+        };
+      }
+
       const isCorrect = question?.correctAnswer === answer.selectedAnswer;
-      if (isCorrect) correctAnswers++;
+      if (isCorrect) {
+        correctAnswers++;
+        rawPoints++;
+      }
       return {
         questionId: answer.questionId,
         selectedAnswer: answer.selectedAnswer,
@@ -69,6 +100,10 @@ export class ResultsService {
       };
     });
 
+    const totalPoints = questions.reduce(
+      (sum, q) => sum + (q.questionType === QuestionType.TWO_PART ? 2 : 1),
+      0,
+    );
     const score = (correctAnswers / questions.length) * 100;
     const satScore =
       test.testType === TestType.SAT ? getSatMathScaledScore(correctAnswers, questions.length) : null;
@@ -83,6 +118,8 @@ export class ResultsService {
       correctAnswers,
       score,
       satScore,
+      rawPoints: test.testType === TestType.MILLIY_SERTIFIKAT ? rawPoints : null,
+      totalPoints: test.testType === TestType.MILLIY_SERTIFIKAT ? totalPoints : null,
       duration: input.duration,
       answers,
       resultStatus: ResultStatus.COMPLETED,
@@ -90,7 +127,8 @@ export class ResultsService {
     });
 
     if (test.testType === TestType.ATTESTATSIYA) {
-      const category = this.getAttestationCategory(correctAnswers * 2);
+      const attestPercentage = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
+      const category = this.getAttestationCategory(attestPercentage);
       if (category) {
         await this.userModel.updateOne({ _id: userId }, { teacherCategory: category });
       }
@@ -140,7 +178,8 @@ export class ResultsService {
 
     const questionMap = new Map(questions.map((q) => [q.id, q]));
     const totalPoints = result.correctAnswers * 2;
-    const grade = this.getAttestationGrade(totalPoints);
+    const percentage = result.totalQuestions > 0 ? (result.correctAnswers / result.totalQuestions) * 100 : 0;
+    const grade = this.getAttestationGrade(percentage);
 
     const sectionOrder: string[] = [];
     const sectionMap = new Map<string, { orderIndex: number; questionId: string; isCorrect: boolean }[]>();
@@ -170,18 +209,20 @@ export class ResultsService {
 
   // Frontenddagi getAttestatsiyaToifa bilan bir xil bo'sag'alar — result sahifasida
   // ko'rsatilgan toifa va profilga saqlanadigan toifa mos kelishi uchun.
-  private getAttestationCategory(points: number): TeacherCategory | null {
-    if (points >= 80) return TeacherCategory.OLIY_TOIFA;
-    if (points >= 70) return TeacherCategory.BIRINCHI_TOIFA;
-    if (points >= 60) return TeacherCategory.IKKINCHI_TOIFA;
-    if (points >= 56) return TeacherCategory.MUTAXASSIS;
+  // Chegaralar to'g'ri javoblar foizi (0-100) bo'yicha — savollar soni 50 dan
+  // farq qilsa ham (kam yoki ko'p) to'g'ri ishlashi uchun.
+  private getAttestationCategory(percentage: number): TeacherCategory | null {
+    if (percentage >= 80) return TeacherCategory.OLIY_TOIFA;
+    if (percentage >= 70) return TeacherCategory.BIRINCHI_TOIFA;
+    if (percentage >= 60) return TeacherCategory.IKKINCHI_TOIFA;
+    if (percentage >= 56) return TeacherCategory.MUTAXASSIS;
     return null;
   }
 
-  private getAttestationGrade(points: number): string | null {
-    const category = this.getAttestationCategory(points);
+  private getAttestationGrade(percentage: number): string | null {
+    const category = this.getAttestationCategory(percentage);
     if (!category) return null;
-    if (points >= 86) return 'Oliy toifa + 70% ustama';
+    if (percentage >= 86) return 'Oliy toifa + 70% ustama';
     const labels: Record<TeacherCategory, string> = {
       [TeacherCategory.MUTAXASSIS]: 'Mutaxassis',
       [TeacherCategory.IKKINCHI_TOIFA]: 'Ikkinchi toifa',
@@ -255,6 +296,65 @@ export class ResultsService {
         createdAt: r.createdAt,
       };
     });
+  }
+
+  // Milliy Sertifikat uchun Rasch balli — talab bo'yicha (on-demand) hisoblanadi,
+  // keshlanmaydi. Kohorta kamida MILLIY_SERTIFIKAT_MIN_RESPONDENTS talabaga
+  // yetmaguncha ball hisoblanmaydi (statistik ishonchlilik uchun).
+  async getMilliySertifikatScore(
+    resultId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<any> {
+    const result = await this.resultModel.findById(resultId);
+    if (!result) throw new NotFoundException('Result not found');
+    if (
+      result.userId !== userId &&
+      userRole !== UserRole.ADMIN &&
+      userRole !== UserRole.TEACHER
+    ) {
+      throw new ForbiddenException();
+    }
+    if (result.rawPoints == null || result.totalPoints == null) {
+      throw new BadRequestException('Bu natija Rasch balliga ega emas');
+    }
+
+    const rows = await this.resultModel
+      .find(
+        { testId: result.testId, resultStatus: ResultStatus.COMPLETED, rawPoints: { $ne: null } },
+        { rawPoints: 1, totalPoints: 1, _id: 0 },
+      )
+      .lean();
+
+    const respondentCount = rows.length;
+    // Talabalarga nechta talaba topshirgani ko'rsatilmaydi (akademiya
+    // daromadi/talabalar soni sir bo'lishi kerak) — faqat xodimlarga ochiq.
+    const isStaff = userRole === UserRole.ADMIN || userRole === UserRole.TEACHER;
+    if (respondentCount < MILLIY_SERTIFIKAT_MIN_RESPONDENTS) {
+      return {
+        ready: false,
+        respondentCount: isStaff ? respondentCount : null,
+        threshold: MILLIY_SERTIFIKAT_MIN_RESPONDENTS,
+        rawPoints: result.rawPoints,
+        totalPoints: result.totalPoints,
+      };
+    }
+
+    const logits = rows.map((r: any) => computeLogit(r.rawPoints, r.totalPoints));
+    const { mean, sd } = computeCohortStats(logits);
+    const myLogit = computeLogit(result.rawPoints, result.totalPoints);
+    const z = sd === 0 ? 0 : (myLogit - mean) / sd;
+    const finalScore = 50 + 10 * z;
+
+    return {
+      ready: true,
+      respondentCount: isStaff ? respondentCount : null,
+      threshold: MILLIY_SERTIFIKAT_MIN_RESPONDENTS,
+      finalScore,
+      grade: getMilliySertifikatGrade(finalScore),
+      rawPoints: result.rawPoints,
+      totalPoints: result.totalPoints,
+    };
   }
 
   async getTopStudents(period: LeaderboardPeriod): Promise<TopStudentEntry[]> {

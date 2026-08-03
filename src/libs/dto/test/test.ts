@@ -60,6 +60,9 @@ export class Test {
   @Field(() => Int)
   totalAttempts: number;
 
+  @Field(() => Date, { nullable: true })
+  closesAt?: Date | null;
+
   @Field()
   createdAt: Date;
 

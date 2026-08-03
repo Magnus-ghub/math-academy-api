@@ -60,6 +60,11 @@ export class TestEntity {
   @Prop({ type: String, required: true })
   createdBy: string;
 
+  // null = doimiy ochiq. Belgilangan bo'lsa, shu vaqtdan keyin kunlik cron
+  // (TestsService.closeExpiredTests) testni avtomatik ARCHIVED qiladi.
+  @Prop({ type: Date, default: null })
+  closesAt: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
 }

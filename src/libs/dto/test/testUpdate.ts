@@ -76,4 +76,9 @@ export class TestUpdate {
   @IsInt()
   @IsPositive()
   testPrice?: number;
+
+  // null = doimiy ochiq. Berilsa, shu sanadan keyin test avtomatik yopiladi.
+  @Field(() => Date, { nullable: true })
+  @IsOptional()
+  closesAt?: Date | null;
 }

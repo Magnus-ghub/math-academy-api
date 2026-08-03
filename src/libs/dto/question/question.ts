@@ -29,6 +29,10 @@ export class Question {
   @Field(() => Int, { nullable: true })
   correctAnswer?: number | null; // 0, 1, 2, 3 (index)
 
+  // Faqat TWO_PART turida — ikkinchi mustaqil javob (Milliy Sertifikat)
+  @Field(() => Int, { nullable: true })
+  correctAnswerB?: number | null;
+
   @Field({ nullable: true })
   explanation?: string;
 

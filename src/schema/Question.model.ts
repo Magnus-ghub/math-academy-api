@@ -32,6 +32,10 @@ export class QuestionEntity {
   @Prop({ type: Number, required: true })
   correctAnswer: number;
 
+  // Faqat TWO_PART turida (Milliy Sertifikat) — ikkinchi mustaqil javob
+  @Prop({ type: Number, default: null })
+  correctAnswerB: number | null;
+
   @Prop({ type: String, default: null })
   explanation: string | null;
 

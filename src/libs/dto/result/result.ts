@@ -69,6 +69,12 @@ export class Result {
   @Field(() => Int, { nullable: true })
   satScore?: number | null; // faqat SAT testlarida — 200-800 shkalalangan Math balli
 
+  @Field(() => Int, { nullable: true })
+  rawPoints?: number | null; // faqat MILLIY_SERTIFIKAT — xom ball (0-55)
+
+  @Field(() => Int, { nullable: true })
+  totalPoints?: number | null; // faqat MILLIY_SERTIFIKAT — maksimal ball (odatda 55)
+
   @Field(() => Int)
   duration: number;       // necha soniyada tugatgan
 
@@ -93,8 +99,14 @@ export class AnswerDto {
   @Field(() => Int)
   selectedAnswer: number;  // talaba tanlagan index
 
+  @Field(() => Int, { nullable: true })
+  selectedAnswerB?: number | null; // faqat TWO_PART savollarida
+
   @Field()
   isCorrect: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  isCorrectB?: boolean | null; // faqat TWO_PART savollarida
 
   @Field(() => Int)
   timeSpent: number;       // shu savolga sarflangan vaqt (soniya)

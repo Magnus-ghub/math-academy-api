@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { Telegraf, Markup, Scenes, session } from 'telegraf';
 import { AuthService } from '../auth/auth.service';
 import { QrLoginService } from '../auth/qr-login.service';
+import { ResultsService } from '../results/results.service';
 import { UserEntity, UserDocument } from 'src/schema/User.model';
 import { TeacherCategory } from 'src/libs/enums/user.enum';
 import { TestType } from 'src/libs/enums/test.enum';
@@ -50,6 +51,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private configService: ConfigService,
     private authService: AuthService,
     private qrLoginService: QrLoginService,
+    private resultsService: ResultsService,
     @InjectModel(UserEntity.name) private userModel: Model<UserDocument>,
   ) {
     const botToken =
@@ -71,6 +73,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         .catch(() => {});
       ctx.scene?.leave().catch(() => {});
     });
+    await this.bot.telegram.setMyCommands([
+      { command: 'login', description: "🎓 Academyga kirish" },
+      { command: 'register', description: "📝 Ro'yxatdan o'tish" },
+      { command: 'results', description: '📊 Mening natijalarim' },
+      { command: 'help', description: '❓ Yordam' },
+    ]);
     this.bot.launch().catch((err) => console.error('Bot launch error:', err));
     console.log('✅ Telegram bot started');
   }
@@ -84,14 +92,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       const payload = ctx.startPayload;
 
       if (payload === 'register') {
-        const existing = await this.userModel.findOne({ telegramId: String(ctx.from.id) });
-        if (existing) {
-          return this.replyWithLoginLink(
-            ctx,
-            `Xush kelibsiz qaytganingizdan xursandmiz, ${existing.userName}! 👋\nSiz allaqachon ro'yxatdan o'tgansiz.`,
-          );
-        }
-        return ctx.scene.enter('register-wizard');
+        return this.handleRegisterRequest(ctx);
       }
 
       if (payload?.startsWith('qr_')) {
@@ -104,20 +105,38 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
       return ctx.reply(
         `Salom, ${ctx.from.first_name}! 👋\n\n🎯 *Saidxonov Academy Bot*\n\n` +
-          `📝 /login — Platformaga kirish\n` +
+          `🎓 /login — Academyga kirish\n` +
+          `📝 /register — Ro'yxatdan o'tish\n` +
+          `📊 /results — Mening natijalarim\n` +
           `❓ /help — Yordam`,
         { parse_mode: 'Markdown' },
       );
     });
 
     this.bot.command('login', async (ctx) => this.handleLoginRequest(ctx));
+    this.bot.command('register', async (ctx) => this.handleRegisterRequest(ctx));
+    this.bot.command('results', async (ctx) => this.handleMyResults(ctx));
 
     this.bot.command('help', (ctx) =>
       ctx.reply(
-        "❓ *Yordam*\n\n/login — Platformaga kirish\n/start register — Ro'yxatdan o'tish",
+        "❓ *Yordam*\n\n" +
+          "🎓 /login — Academyga kirish\n" +
+          "📝 /register — Ro'yxatdan o'tish\n" +
+          "📊 /results — Mening natijalarim",
         { parse_mode: 'Markdown' },
       ),
     );
+  }
+
+  private async handleRegisterRequest(ctx: BotContext) {
+    const existing = await this.userModel.findOne({ telegramId: String(ctx.from!.id) });
+    if (existing) {
+      return this.replyWithLoginLink(
+        ctx,
+        `Xush kelibsiz qaytganingizdan xursandmiz, ${existing.userName}! 👋\nSiz allaqachon ro'yxatdan o'tgansiz.`,
+      );
+    }
+    return ctx.scene.enter('register-wizard');
   }
 
   private buildRegisterWizard(): Scenes.WizardScene<BotContext> {
@@ -308,17 +327,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (result === 'NOT_REGISTERED') {
-      const botUsername = ctx.botInfo?.username;
-      return ctx.reply(
+      return this.replyNotRegistered(
+        ctx,
         "Siz hali ro'yxatdan o'tmagansiz.\n\nAvval ro'yxatdan o'ting, so'ng QR kodni qayta skanerlang:",
-        botUsername
-          ? Markup.inlineKeyboard([
-              Markup.button.url(
-                "📝 Ro'yxatdan o'tish",
-                `https://t.me/${botUsername}?start=register`,
-              ),
-            ])
-          : undefined,
       );
     }
 
@@ -367,20 +378,49 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private async handleLoginRequest(ctx: BotContext) {
     const user = await this.userModel.findOne({ telegramId: String(ctx.from!.id) });
     if (!user) {
-      const botUsername = ctx.botInfo?.username;
-      return ctx.reply(
+      return this.replyNotRegistered(
+        ctx,
         "Siz hali ro'yxatdan o'tmagansiz.\n\nRo'yxatdan o'tish uchun quyidagi tugmani bosing:",
-        botUsername
-          ? Markup.inlineKeyboard([
-              Markup.button.url(
-                "📝 Ro'yxatdan o'tish",
-                `https://t.me/${botUsername}?start=register`,
-              ),
-            ])
-          : undefined,
       );
     }
     return this.replyWithLoginLink(ctx, '🔐 Platformaga kirish:');
+  }
+
+  private async handleMyResults(ctx: BotContext) {
+    const user = await this.userModel.findOne({ telegramId: String(ctx.from!.id) });
+    if (!user) {
+      return this.replyNotRegistered(
+        ctx,
+        "Siz hali ro'yxatdan o'tmagansiz.\n\nRo'yxatdan o'tish uchun quyidagi tugmani bosing:",
+      );
+    }
+
+    const results = await this.resultsService.getMyResults(user.id);
+    if (results.length === 0) {
+      return ctx.reply("📭 Siz hali birorta ham test topshirmagansiz.");
+    }
+
+    const lines = results.slice(0, 5).map((r) => {
+      const date = new Date(r.createdAt).toLocaleDateString('uz-UZ');
+      const title = r.testTitle ?? 'Test';
+      return `📄 *${title}*\n   ${Math.round(r.score)}% — ${r.correctAnswers}/${r.totalQuestions} to'g'ri — ${date}`;
+    });
+
+    return ctx.reply(`📊 *Oxirgi natijalaringiz:*\n\n${lines.join('\n\n')}`, {
+      parse_mode: 'Markdown',
+    });
+  }
+
+  private replyNotRegistered(ctx: BotContext, intro: string) {
+    const botUsername = ctx.botInfo?.username;
+    return ctx.reply(
+      intro,
+      botUsername
+        ? Markup.inlineKeyboard([
+            Markup.button.url("📝 Ro'yxatdan o'tish", `https://t.me/${botUsername}?start=register`),
+          ])
+        : undefined,
+    );
   }
 
   private async replyWithLoginLink(ctx: BotContext, message: string) {

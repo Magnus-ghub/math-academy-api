@@ -35,14 +35,17 @@ input AdminUserUpdate {
 
 type AnswerDto {
   isCorrect: Boolean!
+  isCorrectB: Boolean
   questionId: String!
   selectedAnswer: Int!
+  selectedAnswerB: Int
   timeSpent: Int!
 }
 
 input AnswerInput {
   questionId: String!
   selectedAnswer: Int!
+  selectedAnswerB: Int
   timeSpent: Int!
 }
 
@@ -239,6 +242,16 @@ enum LeaderboardPeriod {
   WEEK
 }
 
+type MilliySertifikatScoreResult {
+  finalScore: Float
+  grade: String
+  rawPoints: Int
+  ready: Boolean!
+  respondentCount: Int
+  threshold: Int!
+  totalPoints: Int
+}
+
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
@@ -333,7 +346,7 @@ type Query {
   getAllGroups: [Group!]!
   getAllPayments: [Payment!]!
   getAllResultsForTest(testId: String!): [AdminResultRow!]!
-  getAllTests: [Test!]!
+  getAllTests(includeArchived: Boolean): [Test!]!
   getAllUsers: [User!]!
   getBook: Content
   getContent(contentId: String!): Content!
@@ -346,6 +359,7 @@ type Query {
   getGroupTests(groupId: String!): [Test!]!
   getLeaderboard(testId: String!): [LeaderboardEntry!]!
   getMe: User!
+  getMilliySertifikatScore(resultId: String!): MilliySertifikatScoreResult!
   getMyGroups: [UserGroup!]!
   getMyPayments: [Payment!]!
   getMyReports: [Report!]!
@@ -373,6 +387,7 @@ type Query {
 type Question {
   analysis: String
   correctAnswer: Int
+  correctAnswerB: Int
   createdAt: DateTime!
   explanation: String
   id: ID!
@@ -389,6 +404,7 @@ type Question {
 input QuestionInput {
   analysis: String
   correctAnswer: Int!
+  correctAnswerB: Int
   explanation: String
   options: [String!]!
   orderIndex: Int!
@@ -401,13 +417,16 @@ input QuestionInput {
 }
 
 enum QuestionType {
+  MATCHING
   MULTI
   SINGLE
+  TWO_PART
 }
 
 input QuestionUpdate {
   analysis: String
   correctAnswer: Int
+  correctAnswerB: Int
   explanation: String
   options: [String!]
   questionImage: String
@@ -494,12 +513,14 @@ type Result {
   finishedAt: DateTime
   groupId: String
   id: ID!
+  rawPoints: Int
   resultStatus: ResultStatus!
   satScore: Int
   score: Float!
   testId: String!
   testTitle: String
   testType: String
+  totalPoints: Int
   totalQuestions: Int!
   userId: String!
 }
@@ -529,6 +550,7 @@ enum TeacherCategory {
 }
 
 type Test {
+  closesAt: DateTime
   createdAt: DateTime!
   createdBy: String!
   dtmType: DTMType
@@ -570,6 +592,7 @@ enum TestDifficulty {
 }
 
 input TestInput {
+  closesAt: DateTime
   dtmType: DTMType
   duration: Int!
   groupId: String
@@ -597,6 +620,7 @@ enum TestType {
 }
 
 input TestUpdate {
+  closesAt: DateTime
   dtmType: DTMType
   duration: Int
   testAccess: TestAccess

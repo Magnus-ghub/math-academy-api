@@ -102,8 +102,10 @@ export class TestsResolver {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Query(() => [Test])
-  async getAllTests() {
-    return this.testsService.getAllTests();
+  async getAllTests(
+    @Args('includeArchived', { type: () => Boolean, nullable: true }) includeArchived?: boolean,
+  ) {
+    return this.testsService.getAllTests(includeArchived);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

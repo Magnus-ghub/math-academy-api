@@ -18,6 +18,7 @@ import { Model } from 'mongoose';
 import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
 import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { TestAccess, TestType } from '../../libs/enums/test.enum';
+import { QuestionType } from '../../libs/enums/question.enum';
 
 @Controller('upload')
 export class UploadController {
@@ -163,8 +164,11 @@ export class UploadController {
       questions: {
         questionText: string;
         questionImage?: string;
+        questionType?: string;
+        section?: string;
         options: string[];
         correctAnswer: number;
+        correctAnswerB?: number;
         explanation?: string;
         youtubeUrl?: string;
         analysis?: string;
@@ -217,7 +221,10 @@ export class UploadController {
     for (let i = 0; i < body.questions.length; i++) {
       const q = body.questions[i];
       const isSpr = Array.isArray(q.options) && q.options.length === 0;
-      if (!q.questionText || !Array.isArray(q.options) || (!isSpr && q.options.length !== 4)) continue;
+      const isMatching = q.questionType === 'MATCHING';
+      const validShape =
+        isSpr || (isMatching && q.options.length >= 2) || q.options.length === 4;
+      if (!q.questionText || !Array.isArray(q.options) || !validShape) continue;
 
       let imageUrl: string | undefined;
 
@@ -242,8 +249,11 @@ export class UploadController {
         testId,
         questionText: q.questionText,
         questionImage: imageUrl,
+        questionType: (q.questionType as QuestionType) || undefined,
+        section: q.section || undefined,
         options: q.options,
         correctAnswer: Math.round(q.correctAnswer ?? 0),
+        correctAnswerB: q.correctAnswerB != null ? Math.round(q.correctAnswerB) : undefined,
         explanation: q.explanation || undefined,
         youtubeUrl: q.youtubeUrl || undefined,
         analysis: q.analysis || undefined,
