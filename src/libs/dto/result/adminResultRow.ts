@@ -36,6 +36,9 @@ export class AdminResultRow {
   @Field(() => Float)
   score: number;
 
+  @Field(() => Int, { nullable: true })
+  satScore?: number | null;
+
   @Field(() => Int)
   duration: number;
 

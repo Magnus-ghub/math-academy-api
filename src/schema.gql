@@ -9,6 +9,7 @@ type AdminResultRow {
   finishedAt: DateTime
   id: ID!
   resultStatus: ResultStatus!
+  satScore: Int
   score: Float!
   testTitle: String
   totalQuestions: Int!
@@ -225,6 +226,7 @@ type LeaderboardEntry {
   correctAnswers: Int!
   duration: Int!
   rank: Int!
+  satScore: Int
   score: Float!
   totalQuestions: Int!
   userId: String!

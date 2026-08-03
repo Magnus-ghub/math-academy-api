@@ -17,6 +17,9 @@ export class LeaderboardEntry {
   @Field(() => Float)
   score: number;
 
+  @Field(() => Int, { nullable: true })
+  satScore?: number | null;
+
   @Field(() => Int)
   correctAnswers: number;
 
