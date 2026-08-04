@@ -235,7 +235,7 @@ export class ResultsService {
 
   async getLeaderboard(testId: string): Promise<LeaderboardEntry[]> {
     const results = await this.resultModel
-      .find({ testId, resultStatus: ResultStatus.COMPLETED, source: ResultSource.PLATFORM })
+      .find({ testId, resultStatus: ResultStatus.COMPLETED, source: { $ne: ResultSource.IMPORTED } })
       .sort({ score: -1, duration: 1 })
       .limit(10);
 
@@ -265,7 +265,7 @@ export class ResultsService {
 
   async getAllResultsForTest(testId: string): Promise<AdminResultRow[]> {
     const results = await this.resultModel
-      .find({ testId, source: ResultSource.PLATFORM })
+      .find({ testId, source: { $ne: ResultSource.IMPORTED } })
       .sort({ score: -1, duration: 1, createdAt: -1 });
 
     if (results.length === 0) return [];
@@ -426,7 +426,7 @@ export class ResultsService {
       {
         $match: {
           resultStatus: ResultStatus.COMPLETED,
-          source: ResultSource.PLATFORM,
+          source: { $ne: ResultSource.IMPORTED },
           createdAt: { $gte: from },
         },
       },
