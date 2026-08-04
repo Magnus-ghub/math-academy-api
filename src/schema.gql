@@ -225,6 +225,16 @@ input GroupUpdate {
   telegramChatId: String
 }
 
+input ImportHistoricalResultsInput {
+  rawScores: [Int!]!
+  testId: String!
+  totalPoints: Int!
+}
+
+type ImportHistoricalResultsPayload {
+  importedCount: Int!
+}
+
 type LeaderboardEntry {
   correctAnswers: Int!
   duration: Int!
@@ -261,6 +271,7 @@ type Mutation {
   approveComment(commentId: String!): Comment!
   changePassword(currentPassword: String, newPassword: String!): Boolean!
   changeRole(userId: String!, userRole: UserRole!): User!
+  clearImportedResults(testId: String!): Int!
   confirmManualPayment(paymentId: String!): Payment!
   createComment(input: CommentInput!): Comment!
   createContent(input: ContentInput!): Content!
@@ -274,6 +285,7 @@ type Mutation {
   deleteQuestion(questionId: String!): Boolean!
   deleteTest(testId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
+  importHistoricalResults(input: ImportHistoricalResultsInput!): ImportHistoricalResultsPayload!
   loginWithEmail(email: String!, password: String!): AuthResponse!
   markReportsSeen: Boolean!
   refreshMyGroups: AuthResponse!
@@ -357,6 +369,7 @@ type Query {
   getGroupMemberIds(groupId: String!): [String!]!
   getGroupMembers(groupId: String!): [GroupMember!]!
   getGroupTests(groupId: String!): [Test!]!
+  getImportedResultsCount(testId: String!): Int!
   getLeaderboard(testId: String!): [LeaderboardEntry!]!
   getMe: User!
   getMilliySertifikatScore(resultId: String!): MilliySertifikatScoreResult!
@@ -391,6 +404,7 @@ type Question {
   createdAt: DateTime!
   explanation: String
   id: ID!
+  optionImages: [String!]
   options: [String!]!
   orderIndex: Int!
   questionImage: String
@@ -406,6 +420,7 @@ input QuestionInput {
   correctAnswer: Int!
   correctAnswerB: Int
   explanation: String
+  optionImages: [String!]
   options: [String!]!
   orderIndex: Int!
   questionImage: String
@@ -428,6 +443,7 @@ input QuestionUpdate {
   correctAnswer: Int
   correctAnswerB: Int
   explanation: String
+  optionImages: [String!]
   options: [String!]
   questionImage: String
   questionText: String

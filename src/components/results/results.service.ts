@@ -6,7 +6,7 @@ import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
 import { UserEntity, UserDocument } from '../../schema/User.model';
 import { ResultInput } from '../../libs/dto/result/resultInput';
-import { ResultStatus } from '../../libs/enums/result.enum';
+import { ResultStatus, ResultSource } from '../../libs/enums/result.enum';
 import { TestStatus, TestType } from '../../libs/enums/test.enum';
 import { TeacherCategory, UserRole } from '../../libs/enums/user.enum';
 import { LeaderboardEntry } from '../../libs/dto/result/leaderboard';
@@ -21,6 +21,7 @@ import {
   getMilliySertifikatGrade,
 } from '../../libs/constants/rasch-scoring.constant';
 import { QuestionType } from '../../libs/enums/question.enum';
+import { ImportHistoricalResultsPayload } from '../../libs/dto/result/importHistoricalResults';
 
 @Injectable()
 export class ResultsService {
@@ -234,7 +235,7 @@ export class ResultsService {
 
   async getLeaderboard(testId: string): Promise<LeaderboardEntry[]> {
     const results = await this.resultModel
-      .find({ testId, resultStatus: ResultStatus.COMPLETED })
+      .find({ testId, resultStatus: ResultStatus.COMPLETED, source: ResultSource.PLATFORM })
       .sort({ score: -1, duration: 1 })
       .limit(10);
 
@@ -264,7 +265,7 @@ export class ResultsService {
 
   async getAllResultsForTest(testId: string): Promise<AdminResultRow[]> {
     const results = await this.resultModel
-      .find({ testId })
+      .find({ testId, source: ResultSource.PLATFORM })
       .sort({ score: -1, duration: 1, createdAt: -1 });
 
     if (results.length === 0) return [];
@@ -357,6 +358,62 @@ export class ResultsService {
     };
   }
 
+  // Eski Excel-metodologiyadan Milliy Sertifikat testi uchun xom ballarni
+  // Rasch kogortasiga "tarixiy" natija sifatida qo'shadi (haqiqiy foydalanuvchi
+  // hisobiga bog'lanmaydi) — getMilliySertifikatScore kogorta hisobida
+  // ishtirok etadi, lekin talaba/admin ko'rinishlarida ko'rinmaydi.
+  async importHistoricalResults(
+    testId: string,
+    totalPoints: number,
+    rawScores: number[],
+  ): Promise<ImportHistoricalResultsPayload> {
+    const test = await this.testModel.findById(testId);
+    if (!test) throw new NotFoundException('Test not found');
+    if (test.testType !== TestType.MILLIY_SERTIFIKAT) {
+      throw new BadRequestException('Faqat Milliy Sertifikat testlari uchun tarixiy natija import qilinadi');
+    }
+    if (totalPoints <= 0) {
+      throw new BadRequestException("Jami ball musbat son bo'lishi kerak");
+    }
+
+    const validScores = rawScores.filter(
+      (score) => Number.isInteger(score) && score >= 0 && score <= totalPoints,
+    );
+
+    const now = new Date();
+    const docs = validScores.map((rawPoints, i) => ({
+      userId: `imported:${testId}:${now.getTime()}:${i}`,
+      testId,
+      resultStatus: ResultStatus.COMPLETED,
+      source: ResultSource.IMPORTED,
+      totalQuestions: totalPoints,
+      correctAnswers: rawPoints,
+      score: (rawPoints / totalPoints) * 100,
+      rawPoints,
+      totalPoints,
+      duration: 0,
+      finishedAt: now,
+    }));
+
+    if (docs.length > 0) {
+      await this.resultModel.insertMany(docs);
+    }
+
+    return { importedCount: docs.length };
+  }
+
+  async getImportedResultsCount(testId: string): Promise<number> {
+    return this.resultModel.countDocuments({ testId, source: ResultSource.IMPORTED });
+  }
+
+  async clearImportedResults(testId: string): Promise<number> {
+    const { deletedCount } = await this.resultModel.deleteMany({
+      testId,
+      source: ResultSource.IMPORTED,
+    });
+    return deletedCount ?? 0;
+  }
+
   async getTopStudents(period: LeaderboardPeriod): Promise<TopStudentEntry[]> {
     const from = new Date();
     if (period === LeaderboardPeriod.MONTH) {
@@ -366,7 +423,13 @@ export class ResultsService {
     }
 
     const rows = await this.resultModel.aggregate([
-      { $match: { resultStatus: ResultStatus.COMPLETED, createdAt: { $gte: from } } },
+      {
+        $match: {
+          resultStatus: ResultStatus.COMPLETED,
+          source: ResultSource.PLATFORM,
+          createdAt: { $gte: from },
+        },
+      },
       { $group: { _id: '$userId', avgScore: { $avg: '$score' }, totalTests: { $sum: 1 } } },
       { $sort: { avgScore: -1, totalTests: -1 } },
       { $limit: 20 },

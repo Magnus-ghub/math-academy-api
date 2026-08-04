@@ -18,6 +18,11 @@ export class QuestionUpdate {
   @IsArray()
   options?: string[];
 
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  optionImages?: string[];
+
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()

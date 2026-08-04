@@ -29,6 +29,11 @@ export class QuestionEntity {
   @Prop({ type: [String], default: [] })
   options: string[];
 
+  // options bilan bir xil indeksda — variant matni o'rniga/qo'shimcha rasm
+  // (masalan SAT'dagi grafik/diagramma variantlari). Bo'sh string = rasm yo'q.
+  @Prop({ type: [String], default: [] })
+  optionImages: string[];
+
   @Prop({ type: Number, required: true })
   correctAnswer: number;
 

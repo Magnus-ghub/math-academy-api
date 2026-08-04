@@ -34,6 +34,11 @@ export class QuestionInput {
   @IsArray()
   options: string[];
 
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  optionImages?: string[];
+
   @Field(() => Int)
   @IsInt()
   @Min(-1)

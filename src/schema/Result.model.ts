@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { ResultStatus } from '../libs/enums/result.enum';
+import { ResultStatus, ResultSource } from '../libs/enums/result.enum';
 
 @Schema({ _id: false })
 export class ResultAnswer {
@@ -78,6 +78,15 @@ export class ResultEntity {
 
   @Prop({ type: Date, default: null })
   finishedAt: Date | null;
+
+  // Milliy Sertifikat uchun eski Excel-metodologiyadan Rasch kogortasini
+  // boyitish maqsadida import qilingan tarixiy natijalarni talabaning
+  // haqiqiy platforma urinishlaridan ajratish uchun (userId sintetik,
+  // haqiqiy User hujjatiga bog'lanmaydi) — talaba/admin ko'rinishlarida
+  // (natijalar jadvali, reyting) chiqarib tashlanadi, faqat Rasch kogorta
+  // hisobida ishtirok etadi.
+  @Prop({ enum: Object.values(ResultSource), type: String, default: ResultSource.PLATFORM })
+  source: ResultSource;
 
   createdAt: Date;
 }

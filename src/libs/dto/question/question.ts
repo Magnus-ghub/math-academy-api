@@ -24,6 +24,9 @@ export class Question {
   @Field(() => [String])
   options: string[]; // A, B, C, D variantlar
 
+  @Field(() => [String], { nullable: true })
+  optionImages?: string[]; // options bilan bir xil indeksda, bo'sh string = rasm yo'q
+
   // Talaba hali testni tugatmagan bo'lsa null qaytadi (getQuestionsByTest) —
   // javob kaliti imtihon paytida clientga sizib chiqmasligi uchun.
   @Field(() => Int, { nullable: true })

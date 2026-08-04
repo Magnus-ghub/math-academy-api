@@ -8,6 +8,16 @@ export enum ResultStatus {
 }
 registerEnumType(ResultStatus, { name: 'ResultStatus' });
 
+// Result talaba tomonidan platformada topshirilganmi (PLATFORM), yoki
+// eski Excel-asosli tizimdan Rasch kogortasini boyitish uchun import
+// qilingan tarixiy qatormi (IMPORTED) — IMPORTED qatorlar haqiqiy
+// foydalanuvchiga bog'lanmaydi, faqat kogorta hisobida ishtirok etadi.
+export enum ResultSource {
+  PLATFORM = 'PLATFORM',
+  IMPORTED = 'IMPORTED',
+}
+registerEnumType(ResultSource, { name: 'ResultSource' });
+
 export enum LeaderboardType {
   TEST   = 'TEST',    // bitta test bo'yicha
   DTM    = 'DTM',     // DTM testlari bo'yicha umumiy
