@@ -21,6 +21,9 @@ export class Question {
   @Field({ nullable: true })
   section?: string;
 
+  @Field({ nullable: true })
+  groupPrompt?: string;
+
   @Field(() => [String])
   options: string[]; // A, B, C, D variantlar
 

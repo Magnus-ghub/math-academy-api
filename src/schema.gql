@@ -8,10 +8,13 @@ type AdminResultRow {
   duration: Int!
   finishedAt: DateTime
   id: ID!
+  rawPoints: Int
   resultStatus: ResultStatus!
   satScore: Int
   score: Float!
   testTitle: String
+  testType: String
+  totalPoints: Int
   totalQuestions: Int!
   userEmail: String
   userId: String!
@@ -239,8 +242,10 @@ type LeaderboardEntry {
   correctAnswers: Int!
   duration: Int!
   rank: Int!
+  rawPoints: Int
   satScore: Int
   score: Float!
+  totalPoints: Int
   totalQuestions: Int!
   userId: String!
   userImage: String
@@ -296,6 +301,7 @@ type Mutation {
   resetPassword(newPassword: String!, token: String!): Boolean!
   resolveRecoveryRequest(id: String!): RecoveryRequest!
   resolveReport(adminReply: String, reportId: String!): Report!
+  restoreTest(testId: String!): Test!
   setGooglePassword(password: String!, userId: String!): Boolean!
   submitRecoveryRequest(input: RecoveryRequestInput!): Boolean!
   submitTest(input: ResultInput!): Result!
@@ -362,6 +368,7 @@ type Query {
   getAllUsers: [User!]!
   getBook: Content
   getContent(contentId: String!): Content!
+  getDeletedTests: [Test!]!
   getEvents: [Content!]!
   getFaqs: [Content!]!
   getGroupById(groupId: String!): Group!
@@ -403,6 +410,7 @@ type Question {
   correctAnswerB: Int
   createdAt: DateTime!
   explanation: String
+  groupPrompt: String
   id: ID!
   optionImages: [String!]
   options: [String!]!
@@ -420,6 +428,7 @@ input QuestionInput {
   correctAnswer: Int!
   correctAnswerB: Int
   explanation: String
+  groupPrompt: String
   optionImages: [String!]
   options: [String!]!
   orderIndex: Int!
@@ -443,6 +452,7 @@ input QuestionUpdate {
   correctAnswer: Int
   correctAnswerB: Int
   explanation: String
+  groupPrompt: String
   optionImages: [String!]
   options: [String!]
   questionImage: String
@@ -624,6 +634,7 @@ input TestInput {
 
 enum TestStatus {
   ARCHIVED
+  DELETED
   DRAFT
   PUBLISHED
 }

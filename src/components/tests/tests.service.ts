@@ -136,29 +136,47 @@ export class TestsService {
   }
 
   // Soft delete — test va savollar bazada saqlanib qoladi (talabalarning
-  // eski natijalari buzilmasligi uchun), faqat ARCHIVED holatga o'tkaziladi
-  // va admin ro'yxatida (getAllTests) hamda talaba ko'radigan ro'yxatlarda
-  // (getPublicTests, getGroupTests — testStatus: PUBLISHED filtri orqali)
-  // ko'rinmay qoladi.
+  // eski natijalari buzilmasligi uchun), DELETED holatga o'tkaziladi va
+  // getAllTests'dan (shu jumladan includeArchived:true bo'lsa ham) hamda
+  // talaba ko'radigan ro'yxatlardan butunlay chiqarib tashlanadi — ARCHIVED
+  // bilan aralashib, admin panelida chalg'ituvchi bo'lib qolmasligi uchun.
   async deleteTest(testId: string): Promise<boolean> {
     const test = await this.testModel.findById(testId);
     if (!test) throw new NotFoundException('Test not found');
-    await this.testModel.updateOne({ _id: testId }, { $set: { testStatus: TestStatus.ARCHIVED } });
+    await this.testModel.updateOne({ _id: testId }, { $set: { testStatus: TestStatus.DELETED } });
     return true;
   }
 
-  // Admin
+  // Admin — o'chirilgan (DELETED) testlar hech qachon qaytarilmaydi, faqat
+  // includeArchived orqali ARCHIVED testlarni ko'rsatish/yashirish tanlanadi.
   async getAllTests(includeArchived?: boolean): Promise<TestDocument[]> {
-    const filter = includeArchived ? {} : { testStatus: { $ne: TestStatus.ARCHIVED } };
+    const filter = includeArchived
+      ? { testStatus: { $ne: TestStatus.DELETED } }
+      : { testStatus: { $nin: [TestStatus.ARCHIVED, TestStatus.DELETED] } };
     return this.testModel.find(filter).sort({ createdAt: -1 });
+  }
+
+  // Savatcha — faqat DELETED testlar, asosiy ro'yxatlardan alohida.
+  async getDeletedTests(): Promise<TestDocument[]> {
+    return this.testModel.find({ testStatus: TestStatus.DELETED }).sort({ createdAt: -1 });
+  }
+
+  // Savatchadan tiklash — DRAFT holatiga qaytaradi, admin qayta ko'rib chiqib
+  // (kerak bo'lsa) qaytadan nashr qiladi.
+  async restoreTest(testId: string): Promise<TestDocument> {
+    const test = await this.testModel.findById(testId);
+    if (!test) throw new NotFoundException('Test not found');
+    await this.testModel.updateOne({ _id: testId }, { $set: { testStatus: TestStatus.DRAFT } });
+    return this.getTestById(testId);
   }
 
   // Muddati (closesAt) o'tgan testlarni har kecha avtomatik yopish (ARCHIVED) —
   // shundan keyin yangi urinish qabul qilinmaydi, kohorta o'sishi to'xtaydi.
+  // DELETED testlar bu bilan qayta ARCHIVED holatiga qaytarib qo'yilmasligi kerak.
   @Cron('0 0 * * *')
   async closeExpiredTests() {
     const result = await this.testModel.updateMany(
-      { closesAt: { $lt: new Date() }, testStatus: { $ne: TestStatus.ARCHIVED } },
+      { closesAt: { $lt: new Date() }, testStatus: { $nin: [TestStatus.ARCHIVED, TestStatus.DELETED] } },
       { $set: { testStatus: TestStatus.ARCHIVED } },
     );
 

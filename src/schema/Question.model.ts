@@ -26,6 +26,12 @@ export class QuestionEntity {
   @Prop({ type: String, default: null })
   section: string | null;
 
+  // Faqat MATCHING turida — guruhdagi barcha savollarga tegishli umumiy shart
+  // matni (masalan piramida haqidagi tavsif), har bir alohida savol matnidan
+  // ajratilgan holda bitta marta ko'rsatiladi.
+  @Prop({ type: String, default: null })
+  groupPrompt: string | null;
+
   @Prop({ type: [String], default: [] })
   options: string[];
 

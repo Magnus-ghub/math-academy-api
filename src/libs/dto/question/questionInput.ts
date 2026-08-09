@@ -70,6 +70,11 @@ export class QuestionInput {
   @IsString()
   section?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  groupPrompt?: string;
+
   @Field(() => Int)
   @IsInt()
   @Min(1)

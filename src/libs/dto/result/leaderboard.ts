@@ -20,6 +20,12 @@ export class LeaderboardEntry {
   @Field(() => Int, { nullable: true })
   satScore?: number | null;
 
+  @Field(() => Int, { nullable: true })
+  rawPoints?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  totalPoints?: number | null;
+
   @Field(() => Int)
   correctAnswers: number;
 

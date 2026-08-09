@@ -114,4 +114,19 @@ export class TestsResolver {
   async deleteTest(@Args('testId') testId: string) {
     return this.testsService.deleteTest(testId);
   }
+
+  // Savatcha
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Query(() => [Test])
+  async getDeletedTests() {
+    return this.testsService.getDeletedTests();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Mutation(() => Test)
+  async restoreTest(@Args('testId') testId: string) {
+    return this.testsService.restoreTest(testId);
+  }
 }

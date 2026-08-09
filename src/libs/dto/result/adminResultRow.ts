@@ -13,6 +13,9 @@ export class AdminResultRow {
   testTitle?: string;
 
   @Field({ nullable: true })
+  testType?: string;
+
+  @Field({ nullable: true })
   userName?: string;
 
   @Field({ nullable: true })
@@ -38,6 +41,12 @@ export class AdminResultRow {
 
   @Field(() => Int, { nullable: true })
   satScore?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  rawPoints?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  totalPoints?: number | null;
 
   @Field(() => Int)
   duration: number;

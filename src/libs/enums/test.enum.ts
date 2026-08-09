@@ -26,6 +26,7 @@ export enum TestStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
   ARCHIVED = 'ARCHIVED',
+  DELETED = 'DELETED',
 }
 registerEnumType(TestStatus, { name: 'TestStatus' });
 

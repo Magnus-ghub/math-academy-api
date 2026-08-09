@@ -166,6 +166,7 @@ export class UploadController {
         questionImage?: string;
         questionType?: string;
         section?: string;
+        groupPrompt?: string;
         options: string[];
         correctAnswer: number;
         correctAnswerB?: number;
@@ -251,6 +252,7 @@ export class UploadController {
         questionImage: imageUrl,
         questionType: (q.questionType as QuestionType) || undefined,
         section: q.section || undefined,
+        groupPrompt: q.groupPrompt || undefined,
         options: q.options,
         correctAnswer: Math.round(q.correctAnswer ?? 0),
         correctAnswerB: q.correctAnswerB != null ? Math.round(q.correctAnswerB) : undefined,

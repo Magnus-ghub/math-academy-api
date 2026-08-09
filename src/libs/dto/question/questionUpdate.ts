@@ -1,5 +1,5 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsString, IsOptional, IsInt, IsArray, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsArray, Min } from 'class-validator';
 
 @InputType()
 export class QuestionUpdate {
@@ -23,11 +23,12 @@ export class QuestionUpdate {
   @IsArray()
   optionImages?: string[];
 
+  // Max(3) qo'yilmaydi — MATCHING savollarda javob banki 4 tadan ko'p
+  // (masalan A-F, 6 ta) bo'lishi mumkin, correctAnswer shu bankdagi indeks.
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
-  @Min(0)
-  @Max(3)
+  @Min(-1)
   correctAnswer?: number;
 
   // Faqat TWO_PART turida ishlatiladi (Milliy Sertifikat) — ikkinchi mustaqil javob
@@ -55,4 +56,9 @@ export class QuestionUpdate {
   @IsOptional()
   @IsString()
   section?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  groupPrompt?: string;
 }
