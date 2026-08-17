@@ -86,12 +86,29 @@ export class PaymentsService {
     }
   }
 
+  // CLICK_SERVICE_ID/CLICK_MERCHANT_ID muhit o'zgaruvchilari sozlanmagan
+  // muhitda (masalan production serverga .env ko'chirilmagan bo'lsa) bu
+  // qiymatlar undefined bo'lib, buzilgan pay URL ("service_id=undefined")
+  // hosil qiladi — Payment yozuvi yaratishdan oldin shu yerda ushlanadi.
+  private assertClickConfigured(): { serviceId: string; merchantId: string } {
+    const serviceId = this.config.get<string>('CLICK_SERVICE_ID');
+    const merchantId = this.config.get<string>('CLICK_MERCHANT_ID');
+    if (!serviceId || !merchantId) {
+      throw new BadRequestException(
+        "Click to'lov tizimi sozlanmagan — administratorga murojaat qiling",
+      );
+    }
+    return { serviceId, merchantId };
+  }
+
   // Balansni Click orqali to'ldirish — PENDING TOPUP payment yaratadi va to'lov linkini qaytaradi
   async initiateClickTopup(
     userId: string,
     amount: number,
   ): Promise<{ payment: PaymentDocument; payUrl: string }> {
     this.assertValidTopupAmount(amount);
+    const { serviceId, merchantId } = this.assertClickConfigured();
+
     const payment = await this.paymentModel.create({
       userId,
       amount,
@@ -100,8 +117,6 @@ export class PaymentsService {
       paymentStatus: PaymentStatus.PENDING,
     });
 
-    const serviceId = this.config.get<string>('CLICK_SERVICE_ID');
-    const merchantId = this.config.get<string>('CLICK_MERCHANT_ID');
     const returnUrl = `${this.config.get<string>('FRONTEND_URL')}/dashboard/balance`;
     const payUrl =
       `https://my.click.uz/services/pay?service_id=${serviceId}&merchant_id=${merchantId}` +
