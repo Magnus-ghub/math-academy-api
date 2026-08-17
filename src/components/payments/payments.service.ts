@@ -27,6 +27,7 @@ import {
   DailyRevenuePoint,
   TopTest,
 } from '../../libs/dto/payment/paymentStats';
+import { UserRole } from '../../libs/enums/user.enum';
 import { TelegramBotService } from '../telegram-bot/telegram-bot.service';
 
 export const PAYMENT_REPORTED = 'PAYMENT_REPORTED';
@@ -148,6 +149,9 @@ export class PaymentsService {
       paymentStatus: PaymentStatus.PENDING,
     });
     await this.pubSub.publish(PAYMENT_REPORTED, { paymentReported: payment });
+    this.notifyAdminsOfManualRequest(payment).catch((err) => {
+      console.error("Admin'ga to'lov so'rovi bildirishnomasi xato berdi:", err);
+    });
     return payment;
   }
 
@@ -397,6 +401,42 @@ export class PaymentsService {
 
     await this.notifyPaymentOutcome(payment, false);
     return payment;
+  }
+
+  // Qo'lda to'ldirish so'rovi kelganda barcha adminlarga Telegram orqali
+  // xabar yuboradi — admin panelini ochib o'tirmasa ham darhol bilishi uchun
+  // (jonli subscription faqat sahifa ochiq bo'lganda ishlaydi)
+  private async notifyAdminsOfManualRequest(
+    payment: PaymentDocument,
+  ): Promise<void> {
+    const [admins, student] = await Promise.all([
+      this.userModel.find(
+        { userRole: UserRole.ADMIN, telegramId: { $ne: null } },
+        '_id telegramId',
+      ),
+      this.userModel.findById(payment.userId, 'userName userLastName'),
+    ]);
+    if (!admins.length) return;
+
+    const studentName =
+      [student?.userName, student?.userLastName].filter(Boolean).join(' ') ||
+      "Noma'lum talaba";
+    const lines = [
+      "🔔 <b>Yangi to'lov so'rovi</b>",
+      '',
+      `👤 Talaba: ${studentName}`,
+      `💵 Summa: ${payment.amount.toLocaleString('uz-UZ')} so'm`,
+    ];
+    if (payment.studentNote) lines.push(`💭 Izoh: ${payment.studentNote}`);
+
+    await Promise.allSettled(
+      admins.map((a) =>
+        this.telegramBotService.notifyUser(a.telegramId!, lines.join('\n'), {
+          label: "📋 Ko'rib chiqish",
+          path: '/admin/payments',
+        }),
+      ),
+    );
   }
 
   // To'lov tasdiqlangan/rad etilgach talabaga Telegram orqali xabar yuboradi
