@@ -76,6 +76,11 @@ type AuthResponse {
   user: User!
 }
 
+type ClickPaymentInitResult {
+  payUrl: String!
+  payment: Payment!
+}
+
 type Comment {
   commentStatus: CommentStatus!
   commentType: CommentType!
@@ -164,6 +169,11 @@ enum DTMType {
   ASOSIY
   FULL
   MAJBURIY
+}
+
+type DailyRevenuePoint {
+  amount: Int!
+  date: String!
 }
 
 """
@@ -270,18 +280,19 @@ type MilliySertifikatScoreResult {
 type Mutation {
   addQuestion(input: QuestionInput!): Question!
   addUserToGroup(groupId: String!, userId: String!): UserGroup!
+  adjustUserBalance(amount: Int!, reason: String, userId: String!): Payment!
   adminGenerateLoginLink(userId: String!): String!
   adminGenerateRebindLink(userId: String!): String!
   adminUpdateUser(input: AdminUserUpdate!, userId: String!): User!
   approveComment(commentId: String!): Comment!
+  cancelMyPendingPayment(paymentId: String!): Payment!
   changePassword(currentPassword: String, newPassword: String!): Boolean!
   changeRole(userId: String!, userRole: UserRole!): User!
   clearImportedResults(testId: String!): Int!
-  confirmManualPayment(paymentId: String!): Payment!
+  confirmManualPayment(adminReply: String, confirmedAmount: Int!, paymentId: String!): Payment!
   createComment(input: CommentInput!): Comment!
   createContent(input: ContentInput!): Content!
   createGroup(input: GroupInput!): Group!
-  createPayment(input: PaymentInput!): Payment!
   createQrSession: String!
   createReport(input: ReportInput!): Report!
   createTest(input: TestInput!): Test!
@@ -291,12 +302,16 @@ type Mutation {
   deleteTest(testId: String!): Boolean!
   googleLogin(avatar: String, email: String!, googleId: String!, name: String!): AuthResponse!
   importHistoricalResults(input: ImportHistoricalResultsInput!): ImportHistoricalResultsPayload!
+  initiateClickTopup(amount: Int!): ClickPaymentInitResult!
   loginWithEmail(email: String!, password: String!): AuthResponse!
   markReportsSeen: Boolean!
+  purchaseTestWithBalance(testId: String!): Payment!
   refreshMyGroups: AuthResponse!
   rejectComment(commentId: String!): Comment!
+  rejectManualPayment(adminReply: String, paymentId: String!): Payment!
   rejectReport(adminReply: String, reportId: String!): Report!
   removeUserFromGroup(groupId: String!, userId: String!): Boolean!
+  reportManualTopup(amount: Int!, receiptUrl: String, studentNote: String): Payment!
   requestPasswordReset(email: String!): Boolean!
   resetPassword(newPassword: String!, token: String!): Boolean!
   resolveRecoveryRequest(id: String!): RecoveryRequest!
@@ -315,6 +330,7 @@ type Mutation {
 }
 
 type Payment {
+  adminReply: String
   amount: Int!
   clickTransactionId: String
   confirmedAt: DateTime
@@ -325,30 +341,53 @@ type Payment {
   paymentProvider: PaymentProvider!
   paymentStatus: PaymentStatus!
   paymentType: PaymentType!
+  platformFee: Int
+  receiptUrl: String
+  studentNote: String
+  testId: String
+  testTitle: String
   userId: String!
-}
-
-input PaymentInput {
-  amount: Int!
-  groupId: String
-  paymentProvider: PaymentProvider!
-  paymentType: PaymentType!
+  userLastName: String
+  userName: String
 }
 
 enum PaymentProvider {
+  BALANCE
   CLICK
   MANUAL
 }
 
+type PaymentStats {
+  avgConfirmHours: Float
+  dailyRevenue: [DailyRevenuePoint!]!
+  netRevenue: Int!
+  outstandingBalance: Int!
+  pendingCount: Int!
+  providerBreakdown: [ProviderBreakdown!]!
+  topTests: [TopTest!]!
+  totalClickCommission: Int!
+  totalTopupConfirmed: Int!
+  uniquePayingUsers: Int!
+}
+
 enum PaymentStatus {
+  CANCELLED
   CONFIRMED
   FAILED
   PENDING
 }
 
 enum PaymentType {
+  ADJUSTMENT
   GROUP
   PREMIUM
+  TOPUP
+}
+
+type ProviderBreakdown {
+  amount: Int!
+  count: Int!
+  provider: String!
 }
 
 type QrSessionStatus {
@@ -380,10 +419,13 @@ type Query {
   getLeaderboard(testId: String!): [LeaderboardEntry!]!
   getMe: User!
   getMilliySertifikatScore(resultId: String!): MilliySertifikatScoreResult!
+  getMyBalance: Int!
   getMyGroups: [UserGroup!]!
   getMyPayments: [Payment!]!
+  getMyPurchasedTestIds: [String!]!
   getMyReports: [Report!]!
   getMyResults: [Result!]!
+  getPaymentStats: PaymentStats!
   getPendingComments: [Comment!]!
   getPendingPayments: [Payment!]!
   getPendingReports: [Report!]!
@@ -396,6 +438,7 @@ type Query {
   getTeachers: [Content!]!
   getTest(testId: String!): Test!
   getTestComments(testId: String!): [Comment!]!
+  getTestSalesStats: [TopTest!]!
   getTests: [Test!]!
   getTopStudents(period: LeaderboardPeriod! = WEEK): [TopStudentEntry!]!
   getUnseenReportsCount: Int!
@@ -565,6 +608,7 @@ enum ResultStatus {
 }
 
 type Subscription {
+  paymentReported: Payment!
   reportCreated: Report!
 }
 
@@ -673,7 +717,15 @@ type TopStudentEntry {
   userName: String!
 }
 
+type TopTest {
+  count: Int!
+  revenue: Int!
+  testId: String!
+  testTitle: String!
+}
+
 type User {
+  balance: Int
   createdAt: DateTime!
   examPrepType: TestType
   googleId: String

@@ -1,16 +1,34 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { TeacherCategory, UserAuthType, UserRole, UserStatus } from 'src/libs/enums/user.enum';
+import {
+  TeacherCategory,
+  UserAuthType,
+  UserRole,
+  UserStatus,
+} from 'src/libs/enums/user.enum';
 import { TestType } from 'src/libs/enums/test.enum';
 
 export type UserDocument = HydratedDocument<UserEntity>;
 
-@Schema({ timestamps: true, collection: 'users', toObject: { virtuals: true }, toJSON: { virtuals: true } })
+@Schema({
+  timestamps: true,
+  collection: 'users',
+  toObject: { virtuals: true },
+  toJSON: { virtuals: true },
+})
 export class UserEntity {
-  @Prop({ enum: Object.values(UserRole), type: String, default: UserRole.STUDENT })
+  @Prop({
+    enum: Object.values(UserRole),
+    type: String,
+    default: UserRole.STUDENT,
+  })
   userRole: UserRole;
 
-  @Prop({ enum: Object.values(UserStatus), type: String, default: UserStatus.ACTIVE })
+  @Prop({
+    enum: Object.values(UserStatus),
+    type: String,
+    default: UserStatus.ACTIVE,
+  })
   userStatus: UserStatus;
 
   @Prop({ enum: Object.values(UserAuthType), type: String, required: true })
@@ -61,6 +79,10 @@ export class UserEntity {
   @Prop({ type: Date, default: null })
   premiumExpiresAt: Date | null;
 
+  // Ichki hamyon balansi (so'mda) — testlar shu balansdan sotib olinadi
+  @Prop({ type: Number, default: 0 })
+  balance: number;
+
   @Prop({ enum: Object.values(TestType), type: String, default: null })
   examPrepType: TestType | null;
 
@@ -73,9 +95,21 @@ export class UserEntity {
 
 export const UserSchema = SchemaFactory.createForClass(UserEntity);
 
-UserSchema.index({ telegramId: 1 }, { unique: true, partialFilterExpression: { telegramId: { $type: 'string' } } });
-UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { googleId: { $type: 'string' } } });
-UserSchema.index({ userEmail: 1 }, { unique: true, partialFilterExpression: { userEmail: { $type: 'string' } } });
+UserSchema.index(
+  { telegramId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { telegramId: { $type: 'string' } },
+  },
+);
+UserSchema.index(
+  { googleId: 1 },
+  { unique: true, partialFilterExpression: { googleId: { $type: 'string' } } },
+);
+UserSchema.index(
+  { userEmail: 1 },
+  { unique: true, partialFilterExpression: { userEmail: { $type: 'string' } } },
+);
 UserSchema.index({ resetPasswordToken: 1 });
 UserSchema.index({ userRole: 1 });
 UserSchema.index({ createdAt: -1 });

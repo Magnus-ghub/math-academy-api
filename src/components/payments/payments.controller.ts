@@ -1,26 +1,23 @@
-import { Controller, Post, Body, Headers, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, Logger } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 
 @Controller('payments')
 export class PaymentsController {
+  private readonly logger = new Logger(PaymentsController.name);
+
   constructor(private paymentsService: PaymentsService) {}
 
   @Post('click/webhook')
   @HttpCode(200)
-  async clickWebhook(@Body() body: any) {
-    console.log('Click webhook body:', body);
+  async clickWebhook(@Body() body: Record<string, any>) {
+    this.logger.log(`Click webhook so'rov: ${JSON.stringify(body)}`);
 
-    if (!body) return { error: 0, error_note: 'Success' };
+    const response =
+      Number(body?.action) === 0
+        ? await this.paymentsService.handleClickPrepare(body)
+        : await this.paymentsService.handleClickComplete(body);
 
-    const { click_trans_id, amount, action, error } = body;
-
-    if (action === 1 && error === 0) {
-      await this.paymentsService.confirmClickPayment(
-        click_trans_id?.toString(),
-        amount,
-      );
-    }
-
-    return { error: 0, error_note: 'Success' };
+    this.logger.log(`Click webhook javob: ${JSON.stringify(response)}`);
+    return response;
   }
 }

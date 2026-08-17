@@ -1,17 +1,26 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cron } from '@nestjs/schedule';
 import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
-import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.model';
+import {
+  UserGroupEntity,
+  UserGroupDocument,
+} from '../../schema/User_Group.model';
 import { ResultEntity, ResultDocument } from '../../schema/Result.model';
+import { PaymentEntity, PaymentDocument } from '../../schema/Payment.model';
 import { TestInput } from '../../libs/dto/test/testInput';
 import { TestUpdate } from '../../libs/dto/test/testUpdate';
 import { QuestionInput } from '../../libs/dto/question/questionInput';
 import { TestAccess, TestStatus } from '../../libs/enums/test.enum';
 import { UserRole } from '../../libs/enums/user.enum';
 import { ResultStatus } from '../../libs/enums/result.enum';
+import { PaymentType, PaymentStatus } from '../../libs/enums/payment.enum';
 
 @Injectable()
 export class TestsService {
@@ -27,6 +36,9 @@ export class TestsService {
 
     @InjectModel(ResultEntity.name)
     private resultModel: Model<ResultDocument>,
+
+    @InjectModel(PaymentEntity.name)
+    private paymentModel: Model<PaymentDocument>,
   ) {}
 
   async createTest(input: TestInput, createdBy: string): Promise<TestDocument> {
@@ -48,10 +60,15 @@ export class TestsService {
   // panelidagi "Ko'rish (Preview)" tugmasi hali PUBLISH qilinmagan (DRAFT)
   // yoki guruh/premium cheklovidagi testni ham talaba ko'radigan xuddi shu
   // sahifada, hech kimga ko'rinmasdan turib ko'ra oladi.
-  async getTestWithAccess(testId: string, userId: string, userRole?: string): Promise<TestDocument> {
+  async getTestWithAccess(
+    testId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<TestDocument> {
     const test = await this.getTestById(testId);
 
-    if (userRole === UserRole.ADMIN || userRole === UserRole.TEACHER) return test;
+    if (userRole === UserRole.ADMIN || userRole === UserRole.TEACHER)
+      return test;
 
     if (test.testStatus !== TestStatus.PUBLISHED) {
       throw new ForbiddenException('Bu test hali nashr etilmagan');
@@ -65,12 +82,20 @@ export class TestsService {
         groupId: test.groupId,
         expiresAt: { $gt: new Date() },
       });
-      if (!hasAccess) throw new ForbiddenException('Bu test faqat guruh talabalariga ochiq');
+      if (!hasAccess)
+        throw new ForbiddenException('Bu test faqat guruh talabalariga ochiq');
       return test;
     }
 
     if (test.testAccess === TestAccess.PREMIUM) {
-      // PREMIUM tekshiruvi UsersService da — guard orqali
+      const hasAccess = await this.paymentModel.exists({
+        userId,
+        testId: String(test._id),
+        paymentType: PaymentType.PREMIUM,
+        paymentStatus: PaymentStatus.CONFIRMED,
+      });
+      if (!hasAccess)
+        throw new ForbiddenException("Bu test uchun to'lov qilinmagan");
       return test;
     }
 
@@ -79,18 +104,25 @@ export class TestsService {
 
   // Barcha published testlar (PUBLIC + PREMIUM) — kirish huquqi test boshlananda tekshiriladi
   async getPublicTests(): Promise<TestDocument[]> {
-    return this.testModel.find({ testStatus: TestStatus.PUBLISHED }).sort({ createdAt: -1 });
+    return this.testModel
+      .find({ testStatus: TestStatus.PUBLISHED })
+      .sort({ createdAt: -1 });
   }
 
   // Guruh testlari
   async getGroupTests(groupId: string): Promise<TestDocument[]> {
-    return this.testModel.find({ groupId, testStatus: TestStatus.PUBLISHED }).sort({ createdAt: -1 });
+    return this.testModel
+      .find({ groupId, testStatus: TestStatus.PUBLISHED })
+      .sort({ createdAt: -1 });
   }
 
   // Savollar
   async addQuestion(input: QuestionInput): Promise<QuestionDocument> {
     const question = await this.questionModel.create(input);
-    await this.testModel.updateOne({ _id: input.testId }, { $inc: { totalQuestions: 1 } });
+    await this.testModel.updateOne(
+      { _id: input.testId },
+      { $inc: { totalQuestions: 1 } },
+    );
     return question;
   }
 
@@ -99,11 +131,18 @@ export class TestsService {
   // sahifasi) qaytariladi — hali imtihon topshirilmagan bo'lsa, bu maydonlar
   // client'ga (Network tab/Apollo cache orqali) sizib chiqmasligi uchun
   // olib tashlanadi.
-  async getQuestionsByTest(testId: string, userId: string, userRole?: string): Promise<any[]> {
+  async getQuestionsByTest(
+    testId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<any[]> {
     await this.getTestWithAccess(testId, userId, userRole);
-    const questions = await this.questionModel.find({ testId }).sort({ orderIndex: 1 });
+    const questions = await this.questionModel
+      .find({ testId })
+      .sort({ orderIndex: 1 });
 
-    if (userRole === UserRole.ADMIN || userRole === UserRole.TEACHER) return questions;
+    if (userRole === UserRole.ADMIN || userRole === UserRole.TEACHER)
+      return questions;
 
     const hasCompleted = await this.resultModel.exists({
       userId,
@@ -121,8 +160,15 @@ export class TestsService {
     });
   }
 
-  async updateQuestion(questionId: string, input: any): Promise<QuestionDocument> {
-    const q = await this.questionModel.findByIdAndUpdate(questionId, { $set: { ...input } }, { new: true });
+  async updateQuestion(
+    questionId: string,
+    input: any,
+  ): Promise<QuestionDocument> {
+    const q = await this.questionModel.findByIdAndUpdate(
+      questionId,
+      { $set: { ...input } },
+      { new: true },
+    );
     if (!q) throw new NotFoundException('Question not found');
     return q;
   }
@@ -131,7 +177,10 @@ export class TestsService {
     const question = await this.questionModel.findById(questionId);
     if (!question) throw new NotFoundException('Question not found');
     await this.questionModel.deleteOne({ _id: questionId });
-    await this.testModel.updateOne({ _id: question.testId }, { $inc: { totalQuestions: -1 } });
+    await this.testModel.updateOne(
+      { _id: question.testId },
+      { $inc: { totalQuestions: -1 } },
+    );
     return true;
   }
 
@@ -143,7 +192,10 @@ export class TestsService {
   async deleteTest(testId: string): Promise<boolean> {
     const test = await this.testModel.findById(testId);
     if (!test) throw new NotFoundException('Test not found');
-    await this.testModel.updateOne({ _id: testId }, { $set: { testStatus: TestStatus.DELETED } });
+    await this.testModel.updateOne(
+      { _id: testId },
+      { $set: { testStatus: TestStatus.DELETED } },
+    );
     return true;
   }
 
@@ -158,7 +210,9 @@ export class TestsService {
 
   // Savatcha — faqat DELETED testlar, asosiy ro'yxatlardan alohida.
   async getDeletedTests(): Promise<TestDocument[]> {
-    return this.testModel.find({ testStatus: TestStatus.DELETED }).sort({ createdAt: -1 });
+    return this.testModel
+      .find({ testStatus: TestStatus.DELETED })
+      .sort({ createdAt: -1 });
   }
 
   // Savatchadan tiklash — DRAFT holatiga qaytaradi, admin qayta ko'rib chiqib
@@ -166,7 +220,10 @@ export class TestsService {
   async restoreTest(testId: string): Promise<TestDocument> {
     const test = await this.testModel.findById(testId);
     if (!test) throw new NotFoundException('Test not found');
-    await this.testModel.updateOne({ _id: testId }, { $set: { testStatus: TestStatus.DRAFT } });
+    await this.testModel.updateOne(
+      { _id: testId },
+      { $set: { testStatus: TestStatus.DRAFT } },
+    );
     return this.getTestById(testId);
   }
 
@@ -176,7 +233,10 @@ export class TestsService {
   @Cron('0 0 * * *')
   async closeExpiredTests() {
     const result = await this.testModel.updateMany(
-      { closesAt: { $lt: new Date() }, testStatus: { $nin: [TestStatus.ARCHIVED, TestStatus.DELETED] } },
+      {
+        closesAt: { $lt: new Date() },
+        testStatus: { $nin: [TestStatus.ARCHIVED, TestStatus.DELETED] },
+      },
       { $set: { testStatus: TestStatus.ARCHIVED } },
     );
 

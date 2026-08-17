@@ -4,8 +4,12 @@ import { TestsService } from './tests.service';
 import { TestsResolver } from './tests.resolver';
 import { TestEntity, TestSchema } from '../../schema/Test.model';
 import { QuestionEntity, QuestionSchema } from '../../schema/Question.model';
-import { UserGroupEntity, UserGroupSchema } from '../../schema/User_Group.model';
+import {
+  UserGroupEntity,
+  UserGroupSchema,
+} from '../../schema/User_Group.model';
 import { ResultEntity, ResultSchema } from '../../schema/Result.model';
+import { PaymentEntity, PaymentSchema } from '../../schema/Payment.model';
 
 @Module({
   imports: [
@@ -14,6 +18,7 @@ import { ResultEntity, ResultSchema } from '../../schema/Result.model';
       { name: QuestionEntity.name, schema: QuestionSchema },
       { name: UserGroupEntity.name, schema: UserGroupSchema },
       { name: ResultEntity.name, schema: ResultSchema },
+      { name: PaymentEntity.name, schema: PaymentSchema },
     ]),
   ],
   providers: [TestsService, TestsResolver],
