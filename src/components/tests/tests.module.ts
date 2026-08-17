@@ -10,6 +10,7 @@ import {
 } from '../../schema/User_Group.model';
 import { ResultEntity, ResultSchema } from '../../schema/Result.model';
 import { PaymentEntity, PaymentSchema } from '../../schema/Payment.model';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PaymentEntity, PaymentSchema } from '../../schema/Payment.model';
       { name: ResultEntity.name, schema: ResultSchema },
       { name: PaymentEntity.name, schema: PaymentSchema },
     ]),
+    NotificationsModule,
   ],
   providers: [TestsService, TestsResolver],
   exports: [TestsService],

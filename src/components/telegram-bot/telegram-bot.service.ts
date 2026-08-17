@@ -338,9 +338,16 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // Report (e'tiroz) admin tomonidan hal/rad etilganda talabaga xabar yuborish
   // uchun — report.service.ts shu metodni chaqiradi.
-  async notifyUser(telegramId: string, message: string) {
+  async notifyUser(
+    telegramId: string,
+    message: string,
+    button: { label: string; path: string } = {
+      label: "📋 Mening e'tirozlarim",
+      path: '/dashboard/reports',
+    },
+  ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const url = frontendUrl ? `${frontendUrl}/dashboard/reports` : undefined;
+    const url = frontendUrl ? `${frontendUrl}${button.path}` : undefined;
     const buttonUrl = url?.replace('://localhost', '://127.0.0.1');
     const canUseButton = buttonUrl && (buttonUrl.startsWith('https://') || buttonUrl.includes('://127.0.0.1'));
 
@@ -351,7 +358,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         {
           parse_mode: 'HTML',
           ...(canUseButton
-            ? { reply_markup: Markup.inlineKeyboard([Markup.button.url("📋 Mening e'tirozlarim", buttonUrl!)]).reply_markup }
+            ? { reply_markup: Markup.inlineKeyboard([Markup.button.url(button.label, buttonUrl!)]).reply_markup }
             : {}),
         },
       );

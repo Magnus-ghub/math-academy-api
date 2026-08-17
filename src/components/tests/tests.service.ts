@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -21,9 +22,12 @@ import { TestAccess, TestStatus } from '../../libs/enums/test.enum';
 import { UserRole } from '../../libs/enums/user.enum';
 import { ResultStatus } from '../../libs/enums/result.enum';
 import { PaymentType, PaymentStatus } from '../../libs/enums/payment.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TestsService {
+  private readonly logger = new Logger(TestsService.name);
+
   constructor(
     @InjectModel(TestEntity.name)
     private testModel: Model<TestDocument>,
@@ -39,15 +43,33 @@ export class TestsService {
 
     @InjectModel(PaymentEntity.name)
     private paymentModel: Model<PaymentDocument>,
+
+    private notificationsService: NotificationsService,
   ) {}
 
   async createTest(input: TestInput, createdBy: string): Promise<TestDocument> {
     return this.testModel.create({ ...input, createdBy });
   }
 
+  // Test birinchi marta PUBLISHED holatiga o'tganda (yaratilganda emas — yangi
+  // testlar har doim DRAFT'dan boshlanadi) tegishli talabalarga bildirishnoma
+  // yuboriladi. Boshqa maydonlarni tahrirlashda (allaqachon nashr etilgan
+  // bo'lsa) qayta bildirishnoma yubormaslik uchun avvalgi holat solishtiriladi.
   async updateTest(testId: string, input: TestUpdate): Promise<TestDocument> {
+    const before = await this.getTestById(testId);
     await this.testModel.updateOne({ _id: testId }, { $set: { ...input } });
-    return this.getTestById(testId);
+    const updated = await this.getTestById(testId);
+
+    if (
+      input.testStatus === TestStatus.PUBLISHED &&
+      before.testStatus !== TestStatus.PUBLISHED
+    ) {
+      this.notificationsService.notifyTestPublished(updated).catch((err) => {
+        this.logger.error("Test e'lon qilish bildirishnomasi xato berdi", err);
+      });
+    }
+
+    return updated;
   }
 
   async getTestById(testId: string): Promise<TestDocument> {

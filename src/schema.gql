@@ -304,6 +304,8 @@ type Mutation {
   importHistoricalResults(input: ImportHistoricalResultsInput!): ImportHistoricalResultsPayload!
   initiateClickTopup(amount: Int!): ClickPaymentInitResult!
   loginWithEmail(email: String!, password: String!): AuthResponse!
+  markAllNotificationsRead: Boolean!
+  markNotificationRead(notificationId: String!): Notification
   markReportsSeen: Boolean!
   purchaseTestWithBalance(testId: String!): Payment!
   refreshMyGroups: AuthResponse!
@@ -327,6 +329,22 @@ type Mutation {
   updateQuestion(input: QuestionUpdate!, questionId: String!): Question!
   updateTest(input: TestUpdate!, testId: String!): Test!
   updateUser(input: UserUpdate!): User!
+}
+
+type Notification {
+  createdAt: DateTime!
+  id: ID!
+  isRead: Boolean!
+  link: String
+  message: String!
+  testId: String
+  title: String!
+  type: NotificationType!
+  userId: String!
+}
+
+enum NotificationType {
+  TEST_PUBLISHED
 }
 
 type Payment {
@@ -421,10 +439,12 @@ type Query {
   getMilliySertifikatScore(resultId: String!): MilliySertifikatScoreResult!
   getMyBalance: Int!
   getMyGroups: [UserGroup!]!
+  getMyNotifications: [Notification!]!
   getMyPayments: [Payment!]!
   getMyPurchasedTestIds: [String!]!
   getMyReports: [Report!]!
   getMyResults: [Result!]!
+  getMyUnreadNotificationCount: Int!
   getPaymentStats: PaymentStats!
   getPendingComments: [Comment!]!
   getPendingPayments: [Payment!]!
