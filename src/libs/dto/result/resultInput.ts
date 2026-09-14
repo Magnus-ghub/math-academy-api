@@ -19,12 +19,12 @@ export class AnswerInput {
 
   // Talaba qog'ozga yozganidek kiritgan xom matn (masalan "√7") — faqat
   // TWO_PART savollarida, admin keyinchalik qo'lda ko'rib chiqishi uchun.
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   selectedAnswerText?: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   selectedAnswerBText?: string;

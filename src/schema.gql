@@ -42,6 +42,8 @@ type AnswerDto {
   questionId: String!
   selectedAnswer: Int!
   selectedAnswerB: Int
+  selectedAnswerBText: String
+  selectedAnswerText: String
   timeSpent: Int!
 }
 
