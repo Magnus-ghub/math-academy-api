@@ -14,6 +14,17 @@ export class ResultAnswer {
   @Prop({ type: Number, default: null })
   selectedAnswerB: number | null;
 
+  // TWO_PART (Milliy Sertifikat) savolida talaba qog'ozga yozganidek
+  // kiritgan xom matn (masalan "√7", "9π/2") — avtomatik baholash faqat
+  // selectedAnswer (raqamli, parseSprAnswer orqali) asosida ishlaydi, bu
+  // maydon esa faqat admin keyinchalik chegaradosh/belgili javoblarni
+  // qo'lda ko'rib chiqishi uchun saqlanadi.
+  @Prop({ type: String, default: null })
+  selectedAnswerText: string | null;
+
+  @Prop({ type: String, default: null })
+  selectedAnswerBText: string | null;
+
   @Prop({ type: Boolean, required: true })
   isCorrect: boolean;
 

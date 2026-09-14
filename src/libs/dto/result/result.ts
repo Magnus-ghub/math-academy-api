@@ -102,6 +102,12 @@ export class AnswerDto {
   @Field(() => Int, { nullable: true })
   selectedAnswerB?: number | null; // faqat TWO_PART savollarida
 
+  @Field({ nullable: true })
+  selectedAnswerText?: string | null; // talaba yozgan xom matn (TWO_PART)
+
+  @Field({ nullable: true })
+  selectedAnswerBText?: string | null;
+
   @Field()
   isCorrect: boolean;
 

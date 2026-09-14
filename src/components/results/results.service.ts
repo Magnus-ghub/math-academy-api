@@ -82,6 +82,8 @@ export class ResultsService {
           questionId: answer.questionId,
           selectedAnswer: answer.selectedAnswer,
           selectedAnswerB: answer.selectedAnswerB ?? null,
+          selectedAnswerText: answer.selectedAnswerText ?? null,
+          selectedAnswerBText: answer.selectedAnswerBText ?? null,
           isCorrect,
           isCorrectB,
           timeSpent: answer.timeSpent,

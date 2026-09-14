@@ -49,6 +49,8 @@ input AnswerInput {
   questionId: String!
   selectedAnswer: Int!
   selectedAnswerB: Int
+  selectedAnswerBText: String
+  selectedAnswerText: String
   timeSpent: Int!
 }
 
