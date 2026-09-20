@@ -47,6 +47,17 @@ export class QuestionEntity {
   @Prop({ type: Number, default: null })
   correctAnswerB: number | null;
 
+  // Faqat TWO_PART turida — admin MathLive orqali kiritgan xom LaTeX ifoda
+  // (masalan "\frac{9-3\sqrt{5}}{2}"), baholashda ISHLATILMAYDI (shu uchun
+  // correctAnswer/correctAnswerB bor), faqat tahrirlashda qayta ko'rsatish
+  // uchun saqlanadi — aks holda ×100 kodlangan sondan asl ifodani tiklab
+  // bo'lmaydi.
+  @Prop({ type: String, default: null })
+  correctAnswerText: string | null;
+
+  @Prop({ type: String, default: null })
+  correctAnswerBText: string | null;
+
   @Prop({ type: String, default: null })
   explanation: string | null;
 

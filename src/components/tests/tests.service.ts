@@ -177,6 +177,8 @@ export class TestsService {
       const obj: any = q.toObject();
       obj.correctAnswer = null;
       obj.correctAnswerB = null;
+      obj.correctAnswerText = null;
+      obj.correctAnswerBText = null;
       obj.explanation = null;
       return obj;
     });

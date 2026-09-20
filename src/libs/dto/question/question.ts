@@ -39,6 +39,17 @@ export class Question {
   @Field(() => Int, { nullable: true })
   correctAnswerB?: number | null;
 
+  // Faqat TWO_PART turida — admin MathLive orqali kiritgan xom LaTeX ifoda,
+  // faqat tahrirlashda qayta ko'rsatish uchun (baholashda ishlatilmaydi).
+  // Tip funksiyasi ANIQ ko'rsatilishi shart — "string | null" union tipini
+  // NestJS GraphQL avtomatik chiqara olmaydi (UndefinedTypeError berib
+  // ilova ishga tushmay qoladi).
+  @Field(() => String, { nullable: true })
+  correctAnswerText?: string | null;
+
+  @Field(() => String, { nullable: true })
+  correctAnswerBText?: string | null;
+
   @Field({ nullable: true })
   explanation?: string;
 

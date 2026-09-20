@@ -37,6 +37,17 @@ export class QuestionUpdate {
   @IsInt()
   correctAnswerB?: number;
 
+  // Faqat TWO_PART turida — admin MathLive orqali kiritgan xom LaTeX ifoda
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  correctAnswerText?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  correctAnswerBText?: string;
+
   @Field({ nullable: true })
   @IsOptional()
   @IsString()

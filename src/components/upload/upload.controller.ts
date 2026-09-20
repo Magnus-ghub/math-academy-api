@@ -19,6 +19,7 @@ import { QuestionEntity, QuestionDocument } from '../../schema/Question.model';
 import { TestEntity, TestDocument } from '../../schema/Test.model';
 import { TestAccess, TestType } from '../../libs/enums/test.enum';
 import { QuestionType } from '../../libs/enums/question.enum';
+import { parseSprAnswer } from '../../libs/utils/parseSprAnswer.util';
 
 @Controller('upload')
 export class UploadController {
@@ -170,6 +171,8 @@ export class UploadController {
         options: string[];
         correctAnswer: number;
         correctAnswerB?: number;
+        correctAnswerText?: string;
+        correctAnswerBText?: string;
         explanation?: string;
         youtubeUrl?: string;
         analysis?: string;
@@ -245,7 +248,25 @@ export class UploadController {
         imageUrl = q.questionImage;
       }
 
+      // SPR/TWO_PART savollarda (variantsiz, options=[]) javob kaliti ildizli/
+      // irratsional ifoda bo'lishi mumkin (masalan "8\sqrt{5}/5"). AI/admin
+      // buni JSON'da to'g'ridan-to'g'ri LaTeX matn sifatida (correctAnswerText/
+      // correctAnswerBText) bersa, ×100 qilingan sonni QO'LDA hisoblashga
+      // hojat yo'q — shu yerda talaba javobi bilan BIR XIL (parseSprAnswer)
+      // funksiya orqali hisoblab olamiz, qo'lda hisoblashdagi xatolarning
+      // oldini olish uchun. Matn berilmasa, eski (to'g'ridan-to'g'ri son)
+      // format ishlatilaveradi.
       const orderIndex = i + 1;
+      const correctAnswer =
+        isSpr && q.correctAnswerText?.trim()
+          ? await parseSprAnswer(q.correctAnswerText)
+          : Math.round(q.correctAnswer ?? 0);
+      const correctAnswerB =
+        isSpr && q.correctAnswerBText?.trim()
+          ? await parseSprAnswer(q.correctAnswerBText)
+          : q.correctAnswerB != null
+            ? Math.round(q.correctAnswerB)
+            : undefined;
       const payload = {
         testId,
         questionText: q.questionText,
@@ -254,8 +275,10 @@ export class UploadController {
         section: q.section || undefined,
         groupPrompt: q.groupPrompt || undefined,
         options: q.options,
-        correctAnswer: Math.round(q.correctAnswer ?? 0),
-        correctAnswerB: q.correctAnswerB != null ? Math.round(q.correctAnswerB) : undefined,
+        correctAnswer,
+        correctAnswerB,
+        correctAnswerText: q.correctAnswerText || undefined,
+        correctAnswerBText: q.correctAnswerBText || undefined,
         explanation: q.explanation || undefined,
         youtubeUrl: q.youtubeUrl || undefined,
         analysis: q.analysis || undefined,

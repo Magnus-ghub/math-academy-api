@@ -475,6 +475,8 @@ type Question {
   analysis: String
   correctAnswer: Int
   correctAnswerB: Int
+  correctAnswerBText: String
+  correctAnswerText: String
   createdAt: DateTime!
   explanation: String
   groupPrompt: String
@@ -494,6 +496,8 @@ input QuestionInput {
   analysis: String
   correctAnswer: Int!
   correctAnswerB: Int
+  correctAnswerBText: String
+  correctAnswerText: String
   explanation: String
   groupPrompt: String
   optionImages: [String!]
@@ -518,6 +522,8 @@ input QuestionUpdate {
   analysis: String
   correctAnswer: Int
   correctAnswerB: Int
+  correctAnswerBText: String
+  correctAnswerText: String
   explanation: String
   groupPrompt: String
   optionImages: [String!]
