@@ -37,7 +37,13 @@ export async function parseSprAnswer(
   if (!s) return -1;
   try {
     const ce = await getEngine();
-    const n = ce.parse(s).N();
+    // Qochirilmagan "%" LaTeX'da izoh (comment) belgisi — Compute Engine buni
+    // "foiz" deb emas, oddiy chegara deb o'qib, "25%" ni "25" (0.25 emas!)
+    // deb hisoblab qo'yadi. JSON orqali test yuklashda (AI/admin) "%"
+    // qochirilmay kelishi mumkin — shuning uchun bu yerda "\%"ga aylantiramiz
+    // (math-academy-client'dagi src/lib/utils.ts'dagi parseSprAnswer bilan
+    // BIR XIL mantiq).
+    const n = ce.parse(s.replace(/(?<!\\)%/g, '\\%')).N();
     if (!n.isReal || n.re === undefined || !Number.isFinite(n.re)) return -1;
     return Math.round(n.re * 100);
   } catch {
