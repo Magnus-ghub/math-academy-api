@@ -39,9 +39,10 @@ export class QuestionInput {
   @IsArray()
   optionImages?: string[];
 
+  // Min qo'yilmaydi — TWO_PART (Milliy Sertifikat) javobi ×100 kodlangan son
+  // bo'lib, manfiy bo'lishi mumkin (masalan -3 → -300).
   @Field(() => Int)
   @IsInt()
-  @Min(-1)
   correctAnswer: number;
 
   // Faqat TWO_PART turida ishlatiladi (Milliy Sertifikat) — ikkinchi mustaqil javob
