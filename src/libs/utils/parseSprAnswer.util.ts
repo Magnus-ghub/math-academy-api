@@ -43,7 +43,13 @@ export async function parseSprAnswer(
     // qochirilmay kelishi mumkin — shuning uchun bu yerda "\%"ga aylantiramiz
     // (math-academy-client'dagi src/lib/utils.ts'dagi parseSprAnswer bilan
     // BIR XIL mantiq).
-    const n = ce.parse(s.replace(/(?<!\\)%/g, '\\%')).N();
+    // \dfrac/\tfrac — \frac'ning faqat ko'rinish (o'lcham) variantlari, lekin
+    // backend'dagi Compute Engine (0.27) ularni tanimaydi va -1 qaytaradi
+    // (client'dagi 0.58 esa taniydi) — natijada "\dfrac{\pi}{6}" kaliti -1
+    // bo'lib saqlanib, to'g'ri javob ham xato deb baholanardi.
+    const n = ce
+      .parse(s.replace(/\\[dt]frac(?![a-zA-Z])/g, '\\frac').replace(/(?<!\\)%/g, '\\%'))
+      .N();
     if (!n.isReal || n.re === undefined || !Number.isFinite(n.re)) return -1;
     return Math.round(n.re * 100);
   } catch {

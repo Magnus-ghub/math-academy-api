@@ -73,9 +73,15 @@ export class ResultsService {
       const question = questions.find((q) => q.id === answer.questionId);
 
       if (question?.questionType === QuestionType.TWO_PART) {
-        const isCorrect = question.correctAnswer === answer.selectedAnswer;
+        // -1 = "javob yo'q" (talaba bo'sh qoldirgan yoki kalit hisoblanmagan) —
+        // ikkala tomon -1 bo'lsa ham to'g'ri hisoblanmasligi kerak.
+        const isCorrect =
+          answer.selectedAnswer !== -1 && question.correctAnswer === answer.selectedAnswer;
         const isCorrectB =
-          question.correctAnswerB != null && question.correctAnswerB === answer.selectedAnswerB;
+          question.correctAnswerB != null &&
+          answer.selectedAnswerB != null &&
+          answer.selectedAnswerB !== -1 &&
+          question.correctAnswerB === answer.selectedAnswerB;
         rawPoints += (isCorrect ? 1 : 0) + (isCorrectB ? 1 : 0);
         if (isCorrect && isCorrectB) correctAnswers++;
         return {
@@ -90,7 +96,8 @@ export class ResultsService {
         };
       }
 
-      const isCorrect = question?.correctAnswer === answer.selectedAnswer;
+      const isCorrect =
+        answer.selectedAnswer !== -1 && question?.correctAnswer === answer.selectedAnswer;
       if (isCorrect) {
         correctAnswers++;
         rawPoints++;
