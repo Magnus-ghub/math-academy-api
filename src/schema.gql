@@ -460,6 +460,7 @@ type Query {
   getResult(resultId: String!): Result!
   getSuccessStories: [Content!]!
   getTeachers: [Content!]!
+  getTelegramChats: [TelegramChatOption!]!
   getTest(testId: String!): Test!
   getTestComments(testId: String!): [Comment!]!
   getTestSalesStats: [TopTest!]!
@@ -647,6 +648,16 @@ enum TeacherCategory {
   IKKINCHI_TOIFA
   MUTAXASSIS
   OLIY_TOIFA
+}
+
+type TelegramChatOption {
+  addedByName: String
+  chatId: String!
+  linkedGroupName: String
+  title: String!
+  type: String!
+  updatedAt: DateTime!
+  username: String
 }
 
 type Test {

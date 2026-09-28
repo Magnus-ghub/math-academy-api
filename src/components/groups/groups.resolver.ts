@@ -5,6 +5,8 @@ import { Group, GroupMember } from '../../libs/dto/group/group';
 import { GroupInput } from '../../libs/dto/group/groupInput';
 import { GroupUpdate } from '../../libs/dto/group/groupUpdate';
 import { UserGroup } from '../../libs/dto/group/group';
+import { TelegramChatOption } from '../../libs/dto/group/telegramChat';
+import { TelegramChatsService } from './telegram-chats.service';
 import { UserRole } from '../../libs/enums/user.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -13,7 +15,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Group)
 export class GroupsResolver {
-  constructor(private groupsService: GroupsService) {}
+  constructor(
+    private groupsService: GroupsService,
+    private telegramChatsService: TelegramChatsService,
+  ) {}
 
   // Foydalanuvchi o'z guruhlarini DB dan oladi (har doim yangi)
   @UseGuards(JwtAuthGuard)
@@ -38,6 +43,15 @@ export class GroupsResolver {
     @Args('input') input: GroupUpdate,
   ) {
     return this.groupsService.updateGroup(groupId, input);
+  }
+
+  // Bot admin bo'lgan Telegram kanal/guruhlar — guruh yaratishda chat ID'ni
+  // qo'lda qidirmasdan tanlash uchun
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Query(() => [TelegramChatOption])
+  async getTelegramChats() {
+    return this.telegramChatsService.listAdminChats();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

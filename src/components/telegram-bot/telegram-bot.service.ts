@@ -6,6 +6,7 @@ import { Telegraf, Markup, Scenes, session } from 'telegraf';
 import { AuthService } from '../auth/auth.service';
 import { QrLoginService } from '../auth/qr-login.service';
 import { ResultsService } from '../results/results.service';
+import { TelegramChatsService } from '../groups/telegram-chats.service';
 import { UserEntity, UserDocument } from 'src/schema/User.model';
 import { TeacherCategory } from 'src/libs/enums/user.enum';
 import { TestType } from 'src/libs/enums/test.enum';
@@ -52,6 +53,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private authService: AuthService,
     private qrLoginService: QrLoginService,
     private resultsService: ResultsService,
+    private telegramChatsService: TelegramChatsService,
     @InjectModel(UserEntity.name) private userModel: Model<UserDocument>,
   ) {
     const botToken =
@@ -63,6 +65,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     const stage = new Scenes.Stage<BotContext>([this.buildRegisterWizard()]);
+    // session/stage'dan OLDIN — kanal postlarida "from" yo'q, session esa
+    // bunday yangilanishlarda xato beradi.
+    this.registerChatTracking();
     this.bot.use(session());
     this.bot.use(stage.middleware());
     this.registerCommands();
@@ -85,6 +90,50 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     this.bot.stop('SIGTERM');
+  }
+
+  // Bot qaysi kanal/guruhlarda admin ekanini kuzatib boradi (admin panelda
+  // guruh yaratishda chat ID o'rniga ro'yxatdan tanlash uchun).
+  private registerChatTracking() {
+    // Bot qo'shildi / admin qilindi / huquqi olindi / chiqarildi
+    this.bot.on('my_chat_member', async (ctx) => {
+      const { chat, from, new_chat_member } = ctx.myChatMember;
+      if (chat.type === 'private') return;
+      await this.telegramChatsService
+        .trackChat({
+          chatId: String(chat.id),
+          title: chat.title,
+          type: chat.type,
+          username: 'username' in chat ? chat.username ?? null : null,
+          botStatus: new_chat_member.status,
+          addedByTelegramId: String(from.id),
+          addedByName: [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || null,
+        })
+        .catch((err) => console.error('trackChat error:', err));
+    });
+
+    // Bot qo'shilganidan oldin admin bo'lib qolgan (yangilanish kelmagan)
+    // kanallar uchun: kanalga "/ulash" deb post yoziladi — bot kanalni
+    // ro'yxatga qo'shadi va postni o'chiradi.
+    this.bot.on('channel_post', async (ctx, next) => {
+      const post = ctx.channelPost;
+      if (!('text' in post) || !/^\/ulash(@\w+)?\s*$/i.test(post.text)) return next();
+      await this.linkChatByCommand(ctx.chat);
+      await ctx.deleteMessage().catch(() => {});
+    });
+  }
+
+  private async linkChatByCommand(chat: { id: number; type: string; title?: string; username?: string }) {
+    const chatId = String(chat.id);
+    const status = await this.telegramChatsService.getBotStatus(chatId).catch(() => null);
+    if (!status) return;
+    await this.telegramChatsService.trackChat({
+      chatId,
+      title: chat.title ?? chatId,
+      type: chat.type,
+      username: chat.username ?? null,
+      botStatus: status,
+    });
   }
 
   private registerCommands() {
@@ -116,6 +165,22 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     this.bot.command('login', async (ctx) => this.handleLoginRequest(ctx));
     this.bot.command('register', async (ctx) => this.handleRegisterRequest(ctx));
     this.bot.command('results', async (ctx) => this.handleMyResults(ctx));
+
+    // Supergroup'da "/ulash" — kanaldagi post bilan bir xil (channel_post
+    // handler'ga qarang). Shaxsiy chatda — qanday ulash haqida yo'riqnoma.
+    this.bot.command('ulash', async (ctx) => {
+      if (ctx.chat.type === 'private') {
+        await ctx.reply(
+          "Kanal yoki guruhni admin panelga ulash uchun:\n\n" +
+            "1. Botni kanal/guruhga ADMIN qilib qo'shing.\n" +
+            "2. Admin panel → Guruhlar → Yangi guruh — kanal ro'yxatda paydo bo'ladi.\n\n" +
+            "Agar bot avvaldan admin bo'lsa-yu, ro'yxatda ko'rinmasa — kanal/guruhga /ulash deb yozing.",
+        );
+        return;
+      }
+      await this.linkChatByCommand(ctx.chat);
+      await ctx.deleteMessage().catch(() => {});
+    });
 
     this.bot.command('help', (ctx) =>
       ctx.reply(

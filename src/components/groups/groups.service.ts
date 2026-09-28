@@ -8,6 +8,7 @@ import { GroupUpdate } from '../../libs/dto/group/groupUpdate';
 import { GroupStatus } from '../../libs/enums/group.enum';
 import { Cron } from '@nestjs/schedule';
 import { GroupInput } from 'src/libs/dto/group/groupInput';
+import { TelegramChatsService } from './telegram-chats.service';
 
 @Injectable()
 export class GroupsService {
@@ -20,13 +21,22 @@ export class GroupsService {
 
     @InjectModel(UserEntity.name)
     private userModel: Model<UserDocument>,
+
+    private telegramChatsService: TelegramChatsService,
   ) {}
 
   async createGroup(input: GroupInput): Promise<GroupDocument> {
+    await this.telegramChatsService.assertBotIsAdmin(input.telegramChatId);
     return this.groupModel.create(input);
   }
 
   async updateGroup(groupId: string, input: GroupUpdate): Promise<GroupDocument> {
+    if (input.telegramChatId) {
+      const current = await this.getGroupById(groupId);
+      if (current.telegramChatId !== input.telegramChatId) {
+        await this.telegramChatsService.assertBotIsAdmin(input.telegramChatId);
+      }
+    }
     await this.groupModel.updateOne({ _id: groupId }, { $set: { ...input } });
     return this.getGroupById(groupId);
   }
