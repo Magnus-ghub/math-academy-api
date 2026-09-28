@@ -100,36 +100,60 @@ export class AuthService {
     return expectedHash === hash;
   }
 
-  private async checkTelegramGroups(telegramId: string): Promise<GroupDocument[]> {
+  // Telegram'dan a'zolikni tekshiradi. Natija uch xil: a'zo, a'zo emas va
+  // "noma'lum" — Telegram javob bermadi (tarmoq uzilishi, so'rovlar cheklovi,
+  // bot huquqi yo'q). Noma'lum guruhlarda foydalanuvchining mavjud a'zoligi
+  // o'zgartirilmaydi — aks holda bitta tarmoq uzilishi talabani barcha
+  // guruhlaridan chiqarib yuborardi.
+  private async checkTelegramGroups(
+    telegramId: string,
+  ): Promise<{ member: GroupDocument[]; unknown: GroupDocument[] }> {
     const groups = await this.groupModel.find({ groupStatus: GroupStatus.ACTIVE });
     const botToken = this.getTelegramBotToken();
 
+    const fetchMemberStatus = async (group: GroupDocument): Promise<string | null> => {
+      const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${group.telegramChatId}&user_id=${telegramId}`;
+      // Tarmoq xatosida bir marta qayta urinamiz
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const data = await (await fetch(url)).json();
+          if (!data.ok) {
+            console.warn(`getChatMember ${group.telegramChatId}: ${data.description}`);
+            return null;
+          }
+          return data.result.status;
+        } catch (err) {
+          if (attempt === 1) {
+            console.warn(`getChatMember ${group.telegramChatId}: ${(err as Error).message}`);
+          }
+        }
+      }
+      return null;
+    };
+
     // Guruhlar soni ko'p bo'lganda (10+) ketma-ket so'rov yuborish login'ni
     // sekinlashtiradi — shuning uchun barcha guruhlarni parallel tekshiramiz.
-    const results = await Promise.allSettled(
-      groups.map(async (group) => {
-        const res = await fetch(
-          `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${group.telegramChatId}&user_id=${telegramId}`,
-        );
-        const data = await res.json();
-        if (!['member', 'administrator', 'creator'].includes(data.result?.status)) {
-          throw new Error('not a member');
-        }
-        return group;
-      }),
-    );
+    const statuses = await Promise.all(groups.map(fetchMemberStatus));
 
-    const memberGroups: GroupDocument[] = [];
-    for (const r of results) {
-      if (r.status === 'fulfilled') memberGroups.push(r.value);
-    }
-    return memberGroups;
+    const member: GroupDocument[] = [];
+    const unknown: GroupDocument[] = [];
+    groups.forEach((group, i) => {
+      const status = statuses[i];
+      if (status === null) unknown.push(group);
+      else if (['member', 'administrator', 'creator'].includes(status)) member.push(group);
+    });
+    return { member, unknown };
   }
 
-  private async syncUserGroups(user: UserDocument, memberGroups: GroupDocument[]) {
-    await this.userGroupModel.deleteMany({ userId: user.id });
+  private async syncUserGroups(
+    user: UserDocument,
+    { member, unknown }: { member: GroupDocument[]; unknown: GroupDocument[] },
+  ) {
+    // Noma'lum guruhlardagi mavjud a'zolik saqlanadi, qolganlari qayta yoziladi
+    const unknownIds = unknown.map((g) => g.id);
+    await this.userGroupModel.deleteMany({ userId: user.id, groupId: { $nin: unknownIds } });
 
-    for (const group of memberGroups) {
+    for (const group of member) {
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
       await this.userGroupModel.create({
@@ -141,7 +165,7 @@ export class AuthService {
     }
 
     const saved = await this.userGroupModel.find({ userId: user.id });
-    const nameMap = new Map(memberGroups.map((g) => [g.id, g.groupName]));
+    const nameMap = new Map([...member, ...unknown].map((g) => [g.id, g.groupName]));
     return saved.map((ug) =>
       Object.assign(ug, { groupName: nameMap.get(ug.groupId) ?? '' }),
     );
