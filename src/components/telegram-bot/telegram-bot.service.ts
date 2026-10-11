@@ -11,6 +11,7 @@ import { UserEntity, UserDocument } from 'src/schema/User.model';
 import { TeacherCategory } from 'src/libs/enums/user.enum';
 import { TestType } from 'src/libs/enums/test.enum';
 import { UZBEKISTAN_REGIONS, findRegionByCode } from 'src/libs/constants/uzbekistan-regions';
+import { normalizePersonName } from 'src/libs/utils/personName.util';
 
 interface RegisterWizardState {
   firstName?: string;
@@ -69,6 +70,17 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     // bunday yangilanishlarda xato beradi.
     this.registerChatTracking();
     this.bot.use(session());
+    // Ro'yxatdan o'tish jarayonida yuborilgan buyruq (/start, /register,
+    // QR-login havolasi va h.k.) ism/familiya sifatida saqlanib qolmasligi
+    // uchun — wizard tashlab yuboriladi va buyruq o'zining odatdagi
+    // handler'iga o'tadi (/start, /register esa ro'yxatni boshidan boshlaydi).
+    this.bot.use((ctx, next) => {
+      const text = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
+      if (text.startsWith('/') && ctx.session?.__scenes?.current) {
+        ctx.session.__scenes = { cursor: 0 };
+      }
+      return next();
+    });
     this.bot.use(stage.middleware());
     this.registerCommands();
     this.bot.catch((err, ctx) => {
@@ -218,12 +230,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply("Iltimos, ismingizni matn ko'rinishida yozing.");
           return;
         }
-        const firstName = ctx.message.text.trim();
-        if (!firstName || firstName.length > 50) {
-          await ctx.reply("Ism noto'g'ri ko'rinmoqda. Qaytadan urinib ko'ring:");
+        const firstName = normalizePersonName(ctx.message.text);
+        if (!firstName.ok) {
+          await ctx.reply(
+            "Ism noto'g'ri ko'rinmoqda. Faqat harflardan foydalaning (2–30 belgi).\nMisol uchun: Aziz",
+          );
           return;
         }
-        (ctx.wizard.state as RegisterWizardState).firstName = firstName;
+        (ctx.wizard.state as RegisterWizardState).firstName = firstName.value;
         await ctx.reply("Familiyangiz nima?\nMisol uchun: Aliyev");
         return ctx.wizard.next();
       },
@@ -232,12 +246,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply("Iltimos, familiyangizni matn ko'rinishida yozing.");
           return;
         }
-        const lastName = ctx.message.text.trim();
-        if (!lastName || lastName.length > 50) {
-          await ctx.reply("Familiya noto'g'ri ko'rinmoqda. Qaytadan urinib ko'ring:");
+        const lastName = normalizePersonName(ctx.message.text);
+        if (!lastName.ok) {
+          await ctx.reply(
+            "Familiya noto'g'ri ko'rinmoqda. Faqat harflardan foydalaning (2–30 belgi).\nMisol uchun: Aliyev",
+          );
           return;
         }
-        (ctx.wizard.state as RegisterWizardState).lastName = lastName;
+        (ctx.wizard.state as RegisterWizardState).lastName = lastName.value;
         await ctx.reply(
           'Qaysi imtihonga tayyorlanasiz?',
           Markup.inlineKeyboard(
