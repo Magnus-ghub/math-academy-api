@@ -1,5 +1,5 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsString, IsEnum, IsInt, IsOptional, Min, Max } from 'class-validator';
+import { InputType, Field } from '@nestjs/graphql';
+import { IsString, IsEnum, IsOptional, IsDate } from 'class-validator';
 import { GroupStatus } from 'src/libs/enums/group.enum';
 
 @InputType()
@@ -19,12 +19,11 @@ export class GroupUpdate {
   @IsString()
   telegramChatId?: string;
 
-  @Field(() => Int, { nullable: true })
+  // Tugash sanasi istalgan vaqtda o'zgartiriladi — mavjud a'zolar ham moslanadi
+  @Field(() => Date, { nullable: true })
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(6)
-  durationMonths?: number;
+  @IsDate()
+  endDate?: Date;
 
   @Field(() => GroupStatus, { nullable: true })
   @IsOptional()

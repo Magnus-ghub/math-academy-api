@@ -13,6 +13,7 @@ import { TeacherCategory, UserAuthType, UserRole, UserStatus } from 'src/libs/en
 import { GroupStatus } from 'src/libs/enums/group.enum';
 import { TestType } from 'src/libs/enums/test.enum';
 import { RebindService } from './rebind.service';
+import { computeMemberExpiresAt } from 'src/libs/utils/groupExpiry.util';
 
 @Injectable()
 export class AuthService {
@@ -154,8 +155,7 @@ export class AuthService {
     await this.userGroupModel.deleteMany({ userId: user.id, groupId: { $nin: unknownIds } });
 
     for (const group of member) {
-      const expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
+      const expiresAt = computeMemberExpiresAt(group);
       await this.userGroupModel.create({
         userId: user.id,
         groupId: group.id,

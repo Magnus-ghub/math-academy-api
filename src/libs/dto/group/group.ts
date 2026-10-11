@@ -19,8 +19,11 @@ export class Group {
   @Field()
   telegramChatId: string;
 
-  @Field(() => Int)
-  durationMonths: number;
+  @Field(() => Int, { nullable: true })
+  durationMonths?: number | null;
+
+  @Field(() => Date, { nullable: true })
+  endDate?: Date | null;
 
   @Field({ nullable: true })
   groupDesc?: string;

@@ -29,6 +29,7 @@ import {
 } from '../../libs/dto/payment/paymentStats';
 import { UserRole } from '../../libs/enums/user.enum';
 import { TelegramBotService } from '../telegram-bot/telegram-bot.service';
+import { computeMemberExpiresAt } from 'src/libs/utils/groupExpiry.util';
 
 export const PAYMENT_REPORTED = 'PAYMENT_REPORTED';
 
@@ -522,8 +523,7 @@ export class PaymentsService {
       const group = await this.groupModel.findById(payment.groupId);
       if (!group) return;
 
-      const expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
+      const expiresAt = computeMemberExpiresAt(group);
 
       const existing = await this.userGroupModel.findOne({
         userId: payment.userId,

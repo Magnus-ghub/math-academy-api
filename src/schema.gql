@@ -187,7 +187,8 @@ scalar DateTime
 
 type Group {
   createdAt: DateTime!
-  durationMonths: Int!
+  durationMonths: Int
+  endDate: DateTime
   endedAt: DateTime
   groupDesc: String
   groupName: String!
@@ -200,7 +201,7 @@ type Group {
 }
 
 input GroupInput {
-  durationMonths: Int!
+  endDate: DateTime!
   groupDesc: String
   groupName: String!
   groupType: GroupType!
@@ -234,7 +235,7 @@ enum GroupType {
 }
 
 input GroupUpdate {
-  durationMonths: Int
+  endDate: DateTime
   endedAt: DateTime
   groupDesc: String
   groupName: String
@@ -422,7 +423,7 @@ type Query {
   checkQrSession(sessionId: String!): QrSessionStatus!
   getAllComments: [Comment!]!
   getAllContent: [Content!]!
-  getAllGroups: [Group!]!
+  getAllGroups(includeInactive: Boolean): [Group!]!
   getAllPayments: [Payment!]!
   getAllResultsForTest(testId: String!): [AdminResultRow!]!
   getAllTests(includeArchived: Boolean): [Test!]!

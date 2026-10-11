@@ -57,8 +57,10 @@ export class GroupsResolver {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Query(() => [Group])
-  async getAllGroups() {
-    return this.groupsService.getAllGroups();
+  async getAllGroups(
+    @Args('includeInactive', { type: () => Boolean, nullable: true }) includeInactive?: boolean,
+  ) {
+    return this.groupsService.getAllGroups(includeInactive ?? false);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

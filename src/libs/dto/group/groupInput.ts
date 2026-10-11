@@ -1,5 +1,5 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsString, IsEnum, IsInt, IsOptional, Min, Max } from 'class-validator';
+import { InputType, Field } from '@nestjs/graphql';
+import { IsString, IsEnum, IsOptional, IsDate } from 'class-validator';
 import { GroupType } from 'src/libs/enums/group.enum';
 
 @InputType()
@@ -16,11 +16,10 @@ export class GroupInput {
   @IsString()
   telegramChatId: string;
 
-  @Field(() => Int)
-  @IsInt()
-  @Min(1)
-  @Max(6)
-  durationMonths: number;
+  // Kurs tugaydigan sana — barcha a'zolarning kirish huquqi shu vaqtda tugaydi
+  @Field(() => Date)
+  @IsDate()
+  endDate: Date;
 
   @Field({ nullable: true })
   @IsOptional()

@@ -18,12 +18,19 @@ export class GroupEntity {
   @Prop({ type: String, required: true, unique: true })
   telegramChatId: string;
 
-  @Prop({ type: Number, required: true })
-  durationMonths: number;
+  // Muddat ikki usulda beriladi — bittasi to'ldiriladi, ikkinchisi null:
+  // durationMonths — har bir a'zo qo'shilgan paytdan boshlab N oy;
+  // endDate — kurs tugaydigan aniq sana, barcha a'zolar uchun bir xil.
+  @Prop({ type: Number, default: null })
+  durationMonths: number | null;
+
+  @Prop({ type: Date, default: null })
+  endDate: Date | null;
 
   @Prop({ type: String, default: null })
   groupDesc: string | null;
 
+  // Bazada yangilanmaydi — GroupsService.getAllGroups'da user_groups'dan hisoblanadi
   @Prop({ type: Number, default: 0 })
   memberCount: number;
 

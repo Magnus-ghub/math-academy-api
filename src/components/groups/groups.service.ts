@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GroupEntity, GroupDocument } from '../../schema/Group.model';
@@ -6,9 +6,9 @@ import { UserGroupEntity, UserGroupDocument } from '../../schema/User_Group.mode
 import { UserEntity, UserDocument } from '../../schema/User.model';
 import { GroupUpdate } from '../../libs/dto/group/groupUpdate';
 import { GroupStatus } from '../../libs/enums/group.enum';
-import { Cron } from '@nestjs/schedule';
 import { GroupInput } from 'src/libs/dto/group/groupInput';
 import { TelegramChatsService } from './telegram-chats.service';
+import { computeMemberExpiresAt } from 'src/libs/utils/groupExpiry.util';
 
 @Injectable()
 export class GroupsService {
@@ -26,8 +26,15 @@ export class GroupsService {
   ) {}
 
   async createGroup(input: GroupInput): Promise<GroupDocument> {
+    this.assertFutureEndDate(input.endDate);
     await this.telegramChatsService.assertBotIsAdmin(input.telegramChatId);
     return this.groupModel.create(input);
+  }
+
+  private assertFutureEndDate(endDate: Date) {
+    if (endDate.getTime() <= Date.now()) {
+      throw new BadRequestException("Tugash sanasi kelajakdagi sana bo'lishi kerak");
+    }
   }
 
   async updateGroup(groupId: string, input: GroupUpdate): Promise<GroupDocument> {
@@ -37,7 +44,20 @@ export class GroupsService {
         await this.telegramChatsService.assertBotIsAdmin(input.telegramChatId);
       }
     }
-    await this.groupModel.updateOne({ _id: groupId }, { $set: { ...input } });
+    // Tugash sanasi belgilangach eski "N oy" qiymati (eski guruhlarda) endi
+    // ishlatilmaydi — tozalanadi
+    const patch: GroupUpdate & { durationMonths?: null } = { ...input };
+    if (input.endDate) {
+      this.assertFutureEndDate(input.endDate);
+      patch.durationMonths = null;
+    }
+    await this.groupModel.updateOne({ _id: groupId }, { $set: patch });
+
+    // Kurs tugash sanasi o'zgarsa — mavjud a'zolarning muddati ham shunga
+    // moslanadi (uzaytirilsa ham, qisqartirilsa ham).
+    if (input.endDate) {
+      await this.userGroupModel.updateMany({ groupId }, { $set: { expiresAt: input.endDate } });
+    }
     return this.getGroupById(groupId);
   }
 
@@ -47,8 +67,27 @@ export class GroupsService {
     return group;
   }
 
-  async getAllGroups(): Promise<GroupDocument[]> {
-    return this.groupModel.find({ groupStatus: GroupStatus.ACTIVE }).sort({ createdAt: -1 });
+  // includeInactive — admin guruhlar sahifasi yopilgan guruhlarni ham ko'rishi
+  // (va qayta ochishi) uchun; boshqa joylar (test yaratish va h.k.) faqat faollarini oladi
+  async getAllGroups(includeInactive = false): Promise<GroupDocument[]> {
+    const groups = await this.groupModel
+      .find(includeInactive ? {} : { groupStatus: GroupStatus.ACTIVE })
+      .sort({ createdAt: -1 });
+    await this.attachMemberCounts(groups);
+    return groups;
+  }
+
+  // A'zolar soni har safar user_groups'dan hisoblanadi — a'zolik bir nechta
+  // joyda yaratiladi (admin qo'shishi, Telegram sinxronlash, to'lov) va
+  // saqlangan hisoblagich ulardan ortda qolib, kartada "0 a'zo" ko'rinardi.
+  private async attachMemberCounts(groups: GroupDocument[]) {
+    if (groups.length === 0) return;
+    const counts = await this.userGroupModel.aggregate<{ _id: string; count: number }>([
+      { $match: { groupId: { $in: groups.map((g) => g.id) } } },
+      { $group: { _id: '$groupId', count: { $sum: 1 } } },
+    ]);
+    const countMap = new Map(counts.map((c) => [c._id, c.count]));
+    for (const group of groups) group.memberCount = countMap.get(group.id) ?? 0;
   }
 
   async getMyGroups(userId: string): Promise<(UserGroupDocument & { groupName: string })[]> {
@@ -77,11 +116,15 @@ export class GroupsService {
   async addUserToGroup(groupId: string, userId: string): Promise<UserGroupDocument> {
     const group = await this.getGroupById(groupId);
 
-    const existing = await this.userGroupModel.findOne({ groupId, userId });
-    if (existing) return existing;
+    const expiresAt = computeMemberExpiresAt(group);
 
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + group.durationMonths);
+    // Muddati o'tgan a'zolik o'chirilmay saqlanadi (tarix uchun) — qayta
+    // qo'shilganda faqat muddati yangilanadi
+    const existing = await this.userGroupModel.findOne({ groupId, userId });
+    if (existing) {
+      existing.expiresAt = expiresAt;
+      return existing.save();
+    }
 
     const saved = await this.userGroupModel.create({
       userId,
@@ -89,7 +132,6 @@ export class GroupsService {
       groupType: group.groupType,
       expiresAt,
     });
-    await this.groupModel.updateOne({ _id: groupId }, { $inc: { memberCount: 1 } });
     return saved;
   }
 
@@ -97,8 +139,6 @@ export class GroupsService {
     const entry = await this.userGroupModel.findOne({ groupId, userId });
     if (!entry) return false;
     await this.userGroupModel.deleteOne({ _id: entry._id });
-    const realCount = await this.userGroupModel.countDocuments({ groupId });
-    await this.groupModel.updateOne({ _id: groupId }, { $set: { memberCount: realCount } });
     return true;
   }
 
@@ -120,15 +160,5 @@ export class GroupsService {
 
   async getMemberCount(groupId: string): Promise<number> {
     return this.userGroupModel.countDocuments({ groupId });
-  }
-
-  // Muddati o'tgan user_groups ni har kecha tozalash
-  @Cron('0 0 * * *')
-  async expireUserGroups() {
-    const result = await this.userGroupModel.deleteMany({ expiresAt: { $lt: new Date() } });
-
-    if (result.deletedCount > 0) {
-      console.log(`Expired ${result.deletedCount} user_groups`);
-    }
   }
 }
