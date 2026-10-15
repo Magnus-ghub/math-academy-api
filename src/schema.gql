@@ -80,6 +80,48 @@ type AuthResponse {
   user: User!
 }
 
+type Broadcast {
+  audience: BroadcastAudience!
+  createdAt: DateTime!
+  failed: Int!
+  finishedAt: DateTime
+  groupId: String
+  groupName: String
+  id: ID!
+  mediaType: BroadcastMediaType
+  message: String!
+  sent: Int!
+  status: BroadcastStatus!
+  total: Int!
+}
+
+enum BroadcastAudience {
+  ALL
+  GROUP
+  ME
+  STUDENTS
+  TEACHERS
+}
+
+input BroadcastInput {
+  audience: BroadcastAudience!
+  groupId: String
+  mediaFileId: String
+  mediaType: BroadcastMediaType
+  message: String! = ""
+}
+
+enum BroadcastMediaType {
+  PHOTO
+  VIDEO
+}
+
+enum BroadcastStatus {
+  DONE
+  INTERRUPTED
+  SENDING
+}
+
 type ClickPaymentInitResult {
   payUrl: String!
   payment: Payment!
@@ -324,6 +366,7 @@ type Mutation {
   resolveRecoveryRequest(id: String!): RecoveryRequest!
   resolveReport(adminReply: String, reportId: String!): Report!
   restoreTest(testId: String!): Test!
+  sendBroadcast(input: BroadcastInput!): Broadcast!
   setGooglePassword(password: String!, userId: String!): Boolean!
   submitRecoveryRequest(input: RecoveryRequestInput!): Boolean!
   submitTest(input: ResultInput!): Result!
@@ -429,6 +472,7 @@ type Query {
   getAllTests(includeArchived: Boolean): [Test!]!
   getAllUsers: [User!]!
   getBook: Content
+  getBroadcasts: [Broadcast!]!
   getContent(contentId: String!): Content!
   getDeletedTests: [Test!]!
   getEvents: [Content!]!

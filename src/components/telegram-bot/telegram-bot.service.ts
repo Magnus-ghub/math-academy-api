@@ -1,4 +1,11 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -8,7 +15,11 @@ import { QrLoginService } from '../auth/qr-login.service';
 import { ResultsService } from '../results/results.service';
 import { TelegramChatsService } from '../groups/telegram-chats.service';
 import { UserEntity, UserDocument } from 'src/schema/User.model';
-import { TeacherCategory } from 'src/libs/enums/user.enum';
+import { TeacherCategory, UserRole } from 'src/libs/enums/user.enum';
+import { BroadcastMediaType } from 'src/libs/enums/broadcast.enum';
+import { BroadcastService } from '../broadcast/broadcast.service';
+import type { BroadcastPayload } from '../broadcast/broadcast.types';
+import { buildBroadcastWizard } from './broadcast-wizard';
 import { TestType } from 'src/libs/enums/test.enum';
 import { UZBEKISTAN_REGIONS, findRegionByCode } from 'src/libs/constants/uzbekistan-regions';
 import { normalizePersonName } from 'src/libs/utils/personName.util';
@@ -45,6 +56,19 @@ const TOIFA_LABELS: Record<TeacherCategory, string> = {
   [TeacherCategory.OLIY_TOIFA]: 'Oliy toifa',
 };
 
+const PUBLIC_COMMANDS = [
+  { command: 'login', description: '🎓 Academyga kirish' },
+  { command: 'register', description: "📝 Ro'yxatdan o'tish" },
+  { command: 'results', description: '📊 Mening natijalarim' },
+  { command: 'help', description: '❓ Yordam' },
+];
+
+// Adminlar menyusida qo'shimcha ko'rinadigan buyruqlar
+const ADMIN_COMMANDS = [
+  ...PUBLIC_COMMANDS,
+  { command: 'elon', description: "📣 E'lon yuborish (admin)" },
+];
+
 @Injectable()
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private bot: Telegraf<BotContext>;
@@ -56,6 +80,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private resultsService: ResultsService,
     private telegramChatsService: TelegramChatsService,
     @InjectModel(UserEntity.name) private userModel: Model<UserDocument>,
+    // BroadcastService ham shu servisdan foydalanadi — aylanma bog'liqlik
+    @Inject(forwardRef(() => BroadcastService))
+    private broadcastService: BroadcastService,
   ) {
     const botToken =
       process.env.NODE_ENV === 'production'
@@ -65,7 +92,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    const stage = new Scenes.Stage<BotContext>([this.buildRegisterWizard()]);
+    const stage = new Scenes.Stage<BotContext>([
+      this.buildRegisterWizard(),
+      buildBroadcastWizard(this.broadcastService),
+    ]);
     // session/stage'dan OLDIN — kanal postlarida "from" yo'q, session esa
     // bunday yangilanishlarda xato beradi.
     this.registerChatTracking();
@@ -90,14 +120,30 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         .catch(() => {});
       ctx.scene?.leave().catch(() => {});
     });
-    await this.bot.telegram.setMyCommands([
-      { command: 'login', description: "🎓 Academyga kirish" },
-      { command: 'register', description: "📝 Ro'yxatdan o'tish" },
-      { command: 'results', description: '📊 Mening natijalarim' },
-      { command: 'help', description: '❓ Yordam' },
-    ]);
+    await this.bot.telegram.setMyCommands(PUBLIC_COMMANDS);
+    await this.syncAdminCommandMenus();
     this.bot.launch().catch((err) => console.error('Bot launch error:', err));
     console.log('✅ Telegram bot started');
+  }
+
+  // /elon oddiy foydalanuvchilar menyusida ko'rinmasligi uchun adminlarga
+  // menyu har birining chati uchun alohida (scope: chat) o'rnatiladi
+  private async syncAdminCommandMenus() {
+    const admins = await this.userModel.find(
+      { userRole: UserRole.ADMIN, telegramId: { $type: 'string' } },
+      'telegramId',
+    );
+    await Promise.all(admins.map((a) => this.setAdminCommandMenu(a.telegramId!)));
+  }
+
+  private async setAdminCommandMenu(telegramId: string) {
+    await this.bot.telegram
+      .setMyCommands(ADMIN_COMMANDS, {
+        scope: { type: 'chat', chat_id: Number(telegramId) },
+      })
+      .catch((err) =>
+        console.error(`Admin menyusini o'rnatib bo'lmadi (telegramId=${telegramId}):`, err),
+      );
   }
 
   async onModuleDestroy() {
@@ -164,17 +210,34 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         return this.handleRebind(ctx, payload.slice('rebind_'.length));
       }
 
+      const isAdmin = await this.userModel.exists({
+        telegramId: String(ctx.from.id),
+        userRole: UserRole.ADMIN,
+      });
+      // Server ishlayotgan paytda admin qilingan foydalanuvchi ham /start
+      // bosganda menyusida /elon paydo bo'lsin
+      if (isAdmin) await this.setAdminCommandMenu(String(ctx.from.id));
+
       return ctx.reply(
         `Salom, ${ctx.from.first_name}! 👋\n\n🎯 *Saidxonov Academy Bot*\n\n` +
           `🎓 /login — Academyga kirish\n` +
           `📝 /register — Ro'yxatdan o'tish\n` +
           `📊 /results — Mening natijalarim\n` +
-          `❓ /help — Yordam`,
+          `❓ /help — Yordam` +
+          (isAdmin ? `\n\n👑 *Admin:*\n📣 /elon — E'lon yuborish` : ''),
         { parse_mode: 'Markdown' },
       );
     });
 
     this.bot.command('login', async (ctx) => this.handleLoginRequest(ctx));
+    this.bot.command('elon', async (ctx) => this.handleBroadcastRequest(ctx));
+    // Faol wizard'ni "/" bilan boshlangan har qanday xabar to'xtatadi
+    // (onModuleInit'dagi middleware) — bu yerda faqat javob qaytaramiz.
+    this.bot.command('bekor', (ctx) => ctx.reply('Bekor qilindi.'));
+    // Wizard tugaganidan keyin eski e'lon tugmalari bosilsa
+    this.bot.action(/^bc:/, (ctx) =>
+      ctx.answerCbQuery("Bu e'lon allaqachon yakunlangan. Yangisi uchun /elon"),
+    );
     this.bot.command('register', async (ctx) => this.handleRegisterRequest(ctx));
     this.bot.command('results', async (ctx) => this.handleMyResults(ctx));
 
@@ -448,6 +511,86 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       // ilovaning boshqa qismini to'xtatmasligi kerak
       console.error(`Telegram xabar yuborilmadi (telegramId=${telegramId}):`, err);
     }
+  }
+
+  // Ommaviy e'lon uchun — notifyUser'dan farqli ravishda natijani qaytaradi
+  // (statistika uchun) va Telegram limitga urilganda (429) aytilgan vaqtcha
+  // kutib qayta urinadi. Matn HTML sifatida talqin qilinmaydi — formatlash
+  // faqat entities orqali (bot ichida yozilgan e'lonlarda) keladi.
+  async sendBroadcastMessage(
+    telegramId: string,
+    payload: BroadcastPayload,
+  ): Promise<boolean> {
+    const entities = payload.entities ?? undefined;
+    const caption = payload.message || undefined;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (payload.mediaType === BroadcastMediaType.PHOTO) {
+          await this.bot.telegram.sendPhoto(telegramId, payload.mediaFileId!, {
+            caption,
+            caption_entities: entities,
+          });
+        } else if (payload.mediaType === BroadcastMediaType.VIDEO) {
+          await this.bot.telegram.sendVideo(telegramId, payload.mediaFileId!, {
+            caption,
+            caption_entities: entities,
+            supports_streaming: true,
+          });
+        } else {
+          await this.bot.telegram.sendMessage(telegramId, payload.message, {
+            entities,
+          });
+        }
+        return true;
+      } catch (err) {
+        const retryAfter = (
+          err as { response?: { parameters?: { retry_after?: number } } }
+        )?.response?.parameters?.retry_after;
+        if (typeof retryAfter !== 'number') return false;
+        await new Promise((resolve) => setTimeout(resolve, (retryAfter + 1) * 1000));
+      }
+    }
+    return false;
+  }
+
+  // Admin paneldan yuklangan rasm/videoni Telegram serveriga joylab, file_id
+  // oladi: fayl adminning o'z chatiga jim yuboriladi va darhol o'chiriladi.
+  // file_id xabar o'chirilgandan keyin ham ishlaydi va barcha oluvchilarga
+  // qayta ishlatiladi — fayl har bir foydalanuvchi uchun qayta yuklanmaydi.
+  async uploadBroadcastMedia(
+    chatId: string,
+    mediaType: BroadcastMediaType,
+    file: { buffer: Buffer; originalname: string },
+  ): Promise<string> {
+    const source = { source: file.buffer, filename: file.originalname };
+    const sent =
+      mediaType === BroadcastMediaType.PHOTO
+        ? await this.bot.telegram.sendPhoto(chatId, source, {
+            disable_notification: true,
+          })
+        : await this.bot.telegram.sendVideo(chatId, source, {
+            disable_notification: true,
+            supports_streaming: true,
+          });
+    await this.bot.telegram.deleteMessage(chatId, sent.message_id).catch(() => {});
+
+    if ('photo' in sent) return sent.photo[sent.photo.length - 1].file_id;
+    if ('video' in sent) return sent.video.file_id;
+    // Telegram videoni tanimasa, uni hujjat sifatida saqlaydi
+    throw new BadRequestException(
+      "Telegram bu videoni qabul qilmadi — MP4 formatda yuklang",
+    );
+  }
+
+  private async handleBroadcastRequest(ctx: BotContext) {
+    if (ctx.chat?.type !== 'private') return;
+    const admin = await this.userModel.findOne(
+      { telegramId: String(ctx.from!.id), userRole: UserRole.ADMIN },
+      '_id',
+    );
+    if (!admin) return ctx.reply("Bu buyruq faqat adminlar uchun.");
+    return ctx.scene.enter('broadcast-wizard', { adminId: admin.id });
   }
 
   private async handleRebind(ctx: BotContext, code: string) {

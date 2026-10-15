@@ -8,4 +8,4 @@ export * from './report.enum';
 export * from './comment.enum';
 export * from './question.enum';
 export * from './result.enum';
-export * from './recovery.enum';
+export * from './recovery.enum';export * from './broadcast.enum';

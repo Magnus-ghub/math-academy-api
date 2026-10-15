@@ -20,6 +20,7 @@ import { ReportModule } from './components/report/report.module';
 import { UploadModule } from './components/upload/upload.module';
 import { TelegramBotModule } from './components/telegram-bot/telegram-bot.module';
 import { RecoveryModule } from './components/recovery/recovery.module';
+import { BroadcastModule } from './components/broadcast/broadcast.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { RecoveryModule } from './components/recovery/recovery.module';
     UploadModule,
     TelegramBotModule,
     RecoveryModule,
+    BroadcastModule,
   ],
   providers: [AppResolver],
 })
